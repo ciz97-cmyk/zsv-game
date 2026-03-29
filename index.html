@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Úniková místnost – Společenské vědy</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+:root {
+  --bg:#0d0b08;--bg2:#16120c;
+  --paper:#f2e5c4;--paper2:#d9c89a;--ink:#1a1006;
+  --gold:#c8a84b;--gold2:#e6c96a;
+  --pz-l:#4ab3f4;--hn-l:#f4a832;
+  --ok-l:#5ecf7a;--red:#7a1515;
+}
+
+*, *::before, *::after {
+  margin:0; padding:0; box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+  user-select:none;
+}
+html, body {
+  width:100%; height:100%;
+  background:var(--bg);
+  font-family:'EB Garamond',serif;
+  color:var(--paper);
+  overflow:hidden;
+  overscroll-behavior:none;
+  touch-action:none;
+}
+
+.screen{display:none;width:100%;height:100%;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* INTRO */
+#intro{
+  align-items:center;justify-content:center;text-align:center;
+  background:radial-gradient(ellipse at 50% 30%,#2a1c08 0%,#0d0b08 70%);
+  padding:1.5rem;overflow-y:auto;touch-action:pan-y;
+}
+.intro-seal{
+  width:88px;height:88px;border:3px solid var(--gold);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:2.4rem;
+  margin:0 auto 1rem;box-shadow:0 0 40px rgba(200,168,75,.3);
+  animation:sealPulse 3s ease-in-out infinite;
+}
+@keyframes sealPulse{0%,100%{box-shadow:0 0 25px rgba(200,168,75,.2)}50%{box-shadow:0 0 55px rgba(200,168,75,.5)}}
+.intro-title{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);line-height:1.25;margin-bottom:.3rem;}
+.intro-sub{font-size:.95rem;color:var(--paper2);font-style:italic;margin-bottom:1.2rem;opacity:.8;}
+.intro-story{
+  background:rgba(200,168,75,.06);border:1px solid rgba(200,168,75,.25);
+  border-radius:10px;padding:1rem 1.2rem;font-size:.93rem;line-height:1.65;
+  color:var(--paper2);margin-bottom:1.2rem;max-width:380px;text-align:left;
+}
+.intro-story p{margin-bottom:.5rem;}
+.intro-story strong{color:var(--gold2);}
+.intro-legend{display:flex;gap:.7rem;margin-bottom:1.4rem;width:100%;max-width:340px;}
+.leg-pill{flex:1;padding:.55rem .7rem;border-radius:10px;font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.4px;text-align:center;line-height:1.5;}
+.leg-pz{background:rgba(26,64,96,.6);border:2px solid var(--pz-l);color:var(--pz-l);}
+.leg-hn{background:rgba(58,40,0,.6);border:2px solid var(--hn-l);color:var(--hn-l);}
+.leg-icon{font-size:1.3rem;display:block;margin-bottom:.2rem;}
+
+/* VŠECHNA TLAČÍTKA */
+button{
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  border:none;
+  font-family:inherit;
+  background:none;
+  color:inherit;
+  padding:0;
+}
+.btn-gold{
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:var(--ink);padding:1rem 2.5rem;
+  font-family:'Cinzel',serif;font-size:1rem;font-weight:600;
+  border-radius:8px;box-shadow:0 4px 24px rgba(200,168,75,.35);
+  min-height:52px;min-width:180px;transition:transform .12s;
+}
+.btn-gold:active{transform:scale(.95);}
+
+/* TOPBAR */
+.topbar{
+  background:var(--bg2);border-bottom:2px solid rgba(200,168,75,.35);
+  padding:.5rem .9rem;display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;height:56px;
+}
+.room-name{font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold2);letter-spacing:.5px;}
+.topbar-right{display:flex;align-items:center;gap:.5rem;}
+.icon-btn{
+  background:rgba(200,168,75,.1);border:1.5px solid rgba(200,168,75,.35)!important;
+  color:var(--gold);width:50px;height:44px;border-radius:8px;
+  font-size:1.1rem;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:1px;position:relative;transition:background .12s;
+}
+.icon-btn:active{background:rgba(200,168,75,.28)!important;}
+.icon-label{font-family:'Cinzel',serif;font-size:.4rem;letter-spacing:.3px;color:var(--gold);opacity:.7;line-height:1;}
+.badge{
+  position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;
+  font-size:.58rem;font-family:sans-serif;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;padding:0 3px;
+  display:flex;align-items:center;justify-content:center;pointer-events:none;
+}
+
+/* PROGRESS */
+.progress-strip{height:4px;background:rgba(200,168,75,.1);flex-shrink:0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#1a4060,var(--pz-l));transition:width .6s ease;}
+
+/* ROOM */
+.room-view{flex:1;position:relative;overflow:hidden;}
+.room-canvas{width:100%;height:100%;position:relative;}
+.room-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(200,168,75,.05) 0%,transparent 55%),linear-gradient(180deg,#0e0b07 0%,#1a1510 55%,#120e09 100%);pointer-events:none;}
+.room-floor{position:absolute;bottom:0;left:0;right:0;height:26%;background:linear-gradient(180deg,#1a1208 0%,#0e0b06 100%);border-top:2px solid rgba(200,168,75,.2);pointer-events:none;}
+.room-ceiling{position:absolute;top:0;left:0;right:0;height:12%;background:linear-gradient(180deg,#0a0806 0%,transparent 100%);pointer-events:none;}
+.wall-grid{position:absolute;top:12%;bottom:26%;left:0;right:0;background:repeating-linear-gradient(90deg,transparent,transparent 79px,rgba(200,168,75,.035) 80px),repeating-linear-gradient(180deg,transparent,transparent 59px,rgba(200,168,75,.035) 60px);pointer-events:none;}
+.view-label{position:absolute;top:4%;width:100%;text-align:center;font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:2px;color:rgba(200,168,75,.4);pointer-events:none;}
+
+/* SVÍČKY */
+.sconce{position:absolute;display:flex;flex-direction:column;align-items:center;pointer-events:none;z-index:2;}
+.flame{width:8px;height:14px;background:radial-gradient(ellipse at 50% 100%,#f4d060,#f4721a,transparent);border-radius:50% 50% 30% 30%;animation:flicker 1.9s ease-in-out infinite;}
+@keyframes flicker{0%,100%{transform:scaleX(1)}25%{transform:scaleX(.8) scaleY(1.1) translateY(-1px)}75%{transform:scaleX(1.15) scaleY(.9) translateY(1px)}}
+.candle-body{width:10px;height:26px;background:linear-gradient(180deg,#e8d5a8,#c8a84b);border-radius:3px 3px 1px 1px;margin-top:1px;}
+.sconce-arm{width:26px;height:9px;border:2px solid rgba(200,168,75,.45);border-top:none;border-radius:0 0 6px 6px;margin-top:2px;}
+
+/* ITEM KARTY – BUTTON element, ne div */
+.hotspot-btn{
+  position:absolute;
+  background:none;border:none;padding:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  touch-action:manipulation;
+  z-index:10;cursor:pointer;
+  min-width:60px;min-height:60px;
+}
+.item-card{
+  width:100%;height:100%;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  position:relative;transition:transform .14s ease,filter .14s;
+}
+.hotspot-btn:active .item-card{transform:scale(.87);filter:brightness(1.45);}
+.item-card.pz{
+  background:linear-gradient(160deg,#0e2236 0%,#1a3555 55%,#0d1c2e 100%);
+  border:2px solid rgba(74,179,244,.6);
+  box-shadow:0 4px 18px rgba(74,179,244,.25),0 2px 6px rgba(0,0,0,.7);
+}
+.item-card.hn{
+  background:linear-gradient(160deg,#241800 0%,#3d2a00 55%,#1e1400 100%);
+  border:2px solid rgba(244,168,50,.6);
+  box-shadow:0 4px 18px rgba(244,168,50,.25),0 2px 6px rgba(0,0,0,.7);
+}
+.item-card.pz::after{content:'❓';position:absolute;top:3px;right:4px;font-size:.65rem;}
+.item-card.hn::after{content:'💡';position:absolute;top:3px;right:4px;font-size:.65rem;}
+.card-emoji{font-size:clamp(1.4rem,7vw,2.2rem);line-height:1;margin-bottom:2px;}
+.card-name{font-family:'Cinzel',serif;font-size:clamp(.4rem,1.7vw,.6rem);letter-spacing:.3px;text-align:center;line-height:1.2;padding:0 3px;}
+.item-card.pz .card-name{color:var(--pz-l);}
+.item-card.hn .card-name{color:var(--hn-l);}
+
+/* NÁBYTEK */
+.shelf-unit{position:absolute;background:linear-gradient(180deg,#2a1c0a,#1a1006);border:1.5px solid rgba(200,168,75,.28);border-radius:3px;pointer-events:none;}
+.shelf-spine{position:absolute;border-radius:3px;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;font-family:'Cinzel',serif;font-size:.4rem;letter-spacing:1px;overflow:hidden;}
+.table-surface{position:absolute;background:linear-gradient(180deg,#3a2510,#2a1c0a);border-radius:4px 4px 0 0;border:1.5px solid rgba(200,168,75,.22);pointer-events:none;}
+.table-leg{position:absolute;background:linear-gradient(90deg,#2a1c0a,#1a1006);border-radius:2px;pointer-events:none;}
+.cabinet{position:absolute;background:linear-gradient(180deg,#1a1208,#0d0b06);border:2px solid rgba(200,168,75,.28);border-radius:6px;pointer-events:none;}
+
+/* TABULE JAKO BUTTON */
+.board-btn{
+  position:absolute;background:none;border:none;padding:0;
+  touch-action:manipulation;cursor:pointer;z-index:5;
+}
+.board-inner{
+  width:100%;height:100%;
+  background:linear-gradient(135deg,#0c1a10 0%,#152515 100%);
+  border:3px solid rgba(200,168,75,.32);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  transition:filter .15s;
+}
+.board-btn:active .board-inner{filter:brightness(1.2);}
+.chalk-text{font-family:'EB Garamond',serif;font-style:italic;font-size:.6rem;color:rgba(255,255,255,.72);text-align:center;line-height:1.7;padding:.5rem .4rem;}
+
+/* DVEŘE JAKO BUTTON */
+.door-btn{
+  position:absolute;
+  background:linear-gradient(135deg,#2a1c08,#1a1006);
+  border:3px solid rgba(200,168,75,.38)!important;
+  border-radius:4px 4px 0 0;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  padding:.5rem .3rem .3rem;
+  touch-action:manipulation;z-index:5;cursor:pointer;
+  transition:filter .15s;
+}
+.door-btn:active{filter:brightness(1.2);}
+.door-panel{width:85%;background:rgba(0,0,0,.3);border:1px solid rgba(200,168,75,.13);border-radius:2px;}
+.door-knob{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 7px rgba(200,168,75,.55);}
+.door-locks{position:absolute;right:-16px;top:18%;display:flex;flex-direction:column;gap:5px;pointer-events:none;}
+.lock-pip{width:26px;height:26px;border-radius:5px;border:1.5px solid;display:flex;align-items:center;justify-content:center;font-size:.8rem;background:rgba(0,0,0,.5);transition:all .3s;}
+.lock-pip.locked{border-color:var(--red);color:var(--red);}
+.lock-pip.open{border-color:var(--ok-l);color:var(--ok-l);box-shadow:0 0 8px rgba(94,207,122,.3);}
+
+/* PUZZLE PANEL */
+.puzzle-btn{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:28%;
+  display:flex;align-items:center;gap:.5rem;padding:.65rem 1rem;
+  border-radius:8px;touch-action:manipulation;cursor:pointer;
+  font-family:'Cinzel',serif;font-size:.65rem;z-index:10;
+  transition:filter .14s;
+}
+.puzzle-btn:active{filter:brightness(1.3);}
+.puzzle-btn.active{background:rgba(26,64,96,.5);border:1.5px solid rgba(74,179,244,.5)!important;color:var(--pz-l);}
+.puzzle-btn.done{background:rgba(26,74,42,.4);border:1.5px solid rgba(94,207,122,.4)!important;color:var(--ok-l);}
+
+/* NAV */
+.nav-row{position:absolute;bottom:9%;width:100%;display:flex;justify-content:space-between;padding:0 1rem;z-index:10;}
+.nav-btn{
+  background:rgba(200,168,75,.12);border:1.5px solid rgba(200,168,75,.4)!important;
+  color:var(--gold);width:60px;height:60px;border-radius:50%;font-size:1.4rem;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);touch-action:manipulation;transition:background .12s;
+}
+.nav-btn:active{background:rgba(200,168,75,.3)!important;}
+
+/* LEGENDA */
+.legend-strip{position:absolute;bottom:5%;left:50%;transform:translateX(-50%);display:flex;gap:.4rem;pointer-events:none;z-index:3;}
+.leg-strip{padding:.22rem .5rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.48rem;display:flex;align-items:center;gap:.25rem;}
+.leg-strip.pz{background:rgba(26,64,96,.85);border:1px solid var(--pz-l);color:var(--pz-l);}
+.leg-strip.hn{background:rgba(58,40,0,.85);border:1px solid var(--hn-l);color:var(--hn-l);}
+
+/* BOTTOMBAR */
+.bottombar{
+  background:var(--bg2);border-top:2px solid rgba(200,168,75,.28);
+  padding:.5rem .8rem .7rem;flex-shrink:0;
+  padding-bottom:max(.7rem,env(safe-area-inset-bottom));
+}
+.inv-label{font-family:'Cinzel',serif;font-size:.5rem;letter-spacing:1.5px;color:rgba(200,168,75,.55);text-transform:uppercase;margin-bottom:.4rem;}
+.inv-row{display:flex;gap:.4rem;}
+.inv-slot{
+  flex:1;max-width:58px;height:58px;border-radius:10px;
+  border:1.5px dashed rgba(200,168,75,.22);background:rgba(200,168,75,.04);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+  touch-action:manipulation;cursor:pointer;transition:all .18s;
+}
+.inv-slot.has-item{border-style:solid;}
+.inv-slot.pz-slot{border-color:rgba(74,179,244,.55);background:rgba(26,64,96,.3);}
+.inv-slot.hn-slot{border-color:rgba(244,168,50,.55);background:rgba(58,40,0,.3);}
+.inv-slot.sel{box-shadow:0 0 14px rgba(200,168,75,.5);transform:translateY(-3px);}
+.inv-slot:active{opacity:.7;}
+.slot-emoji{font-size:1.6rem;line-height:1;}
+.slot-dot{position:absolute;top:3px;right:4px;width:7px;height:7px;border-radius:50%;}
+.pz-slot .slot-dot{background:var(--pz-l);box-shadow:0 0 5px var(--pz-l);}
+.hn-slot .slot-dot{background:var(--hn-l);box-shadow:0 0 5px var(--hn-l);}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  z-index:200;display:none;align-items:flex-end;justify-content:center;
+  touch-action:none;
+}
+.modal-overlay.open{display:flex;}
+.modal-sheet{
+  background:linear-gradient(180deg,#1e1810 0%,#16120c 100%);
+  border:2px solid rgba(200,168,75,.32);border-bottom:none;
+  border-radius:18px 18px 0 0;width:100%;max-width:480px;
+  padding:1.2rem 1.2rem max(2rem,env(safe-area-inset-bottom));
+  max-height:88vh;overflow-y:auto;
+  animation:slideUp .25s ease;touch-action:pan-y;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:rgba(200,168,75,.38);border-radius:2px;margin:0 auto 1rem;}
+.modal-title{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold2);text-align:center;margin-bottom:.9rem;}
+.modal-body{font-size:.94rem;line-height:1.65;color:var(--paper2);}
+.modal-body p{margin-bottom:.7rem;}
+.modal-close{
+  background:transparent;border:1.5px solid rgba(200,168,75,.4)!important;
+  color:var(--gold);padding:.8rem 1.5rem;border-radius:8px;
+  font-family:'Cinzel',serif;font-size:.9rem;
+  width:100%;margin-top:1rem;min-height:52px;
+  touch-action:manipulation;transition:background .14s;
+}
+.modal-close:active{background:rgba(200,168,75,.18)!important;}
+
+/* DETAIL */
+.item-detail-card{display:flex;align-items:flex-start;gap:1rem;padding:.9rem;border-radius:12px;margin-bottom:1rem;}
+.item-detail-card.pz-dc{background:rgba(26,64,96,.4);border:1.5px solid rgba(74,179,244,.4);}
+.item-detail-card.hn-dc{background:rgba(58,40,0,.4);border:1.5px solid rgba(244,168,50,.4);}
+.detail-icon{font-size:2.4rem;flex-shrink:0;}
+.detail-meta h3{font-family:'Cinzel',serif;font-size:.9rem;margin-bottom:.25rem;}
+.detail-meta h3.pzh{color:var(--pz-l);}
+.detail-meta h3.hnh{color:var(--hn-l);}
+.type-badge{display:inline-block;padding:.15rem .45rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.5rem;letter-spacing:.4px;margin-bottom:.35rem;}
+.pz-badge{background:rgba(26,64,96,.6);border:1px solid var(--pz-l);color:var(--pz-l);}
+.hn-badge{background:rgba(58,40,0,.6);border:1px solid var(--hn-l);color:var(--hn-l);}
+
+/* PUZZLE VSTUP */
+.puzzle-input{
+  background:rgba(200,168,75,.08);border:2px solid rgba(200,168,75,.4);
+  color:var(--paper);font-family:'Cinzel',serif;font-size:1.8rem;
+  text-align:center;padding:.8rem;border-radius:10px;
+  width:100%;margin:.8rem 0;letter-spacing:6px;
+  -webkit-appearance:none;appearance:none;touch-action:manipulation;
+}
+.puzzle-input:focus{outline:none;border-color:var(--gold2);box-shadow:0 0 15px rgba(200,168,75,.3);}
+.btn-check{
+  background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink);
+  padding:.9rem;border-radius:10px;font-family:'Cinzel',serif;
+  font-size:.95rem;font-weight:600;width:100%;min-height:52px;
+  touch-action:manipulation;transition:transform .12s;
+}
+.btn-check:active{transform:scale(.97);}
+.feedback{text-align:center;padding:.5rem;border-radius:8px;font-size:.9rem;margin-top:.6rem;display:none;}
+.feedback.ok{background:rgba(26,74,42,.4);border:1px solid var(--ok-l);color:var(--ok-l);display:block;}
+.feedback.err{background:rgba(122,21,21,.4);border:1px solid #eb5757;color:#eb5757;display:block;}
+
+/* QUIZ */
+.quiz-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.8rem 0;}
+.quiz-opt{
+  background:rgba(200,168,75,.06);border:1.5px solid rgba(200,168,75,.25)!important;
+  color:var(--paper2);padding:.9rem .6rem;border-radius:10px;
+  font-family:'EB Garamond',serif;font-size:.95rem;line-height:1.3;
+  text-align:center;touch-action:manipulation;min-height:52px;
+  transition:background .14s;
+}
+.quiz-opt:active{background:rgba(200,168,75,.22)!important;}
+.quiz-opt.correct{background:rgba(26,74,42,.5)!important;border-color:var(--ok-l)!important;color:var(--ok-l);}
+.quiz-opt.wrong{background:rgba(122,21,21,.5)!important;border-color:#eb5757!important;color:#eb5757;}
+
+/* ZÁPISNÍK */
+.nb-entry{border-radius:8px;padding:.7rem .9rem;margin-bottom:.7rem;border-left:3px solid var(--gold);background:rgba(200,168,75,.05);}
+.nb-entry h4{font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold2);margin-bottom:.3rem;}
+.nb-entry p{font-size:.87rem;color:var(--paper2);line-height:1.55;}
+
+/* INVENTÁŘ LIST */
+.inv-li{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem;border-radius:10px;margin-bottom:.6rem;touch-action:manipulation;cursor:pointer;transition:filter .14s;}
+.inv-li:active{filter:brightness(1.2);}
+.inv-li.pz-li{background:rgba(26,64,96,.3);border:1.5px solid rgba(74,179,244,.35);}
+.inv-li.hn-li{background:rgba(58,40,0,.3);border:1.5px solid rgba(244,168,50,.35);}
+.inv-li-icon{font-size:2rem;flex-shrink:0;}
+.inv-li-info h3{font-family:'Cinzel',serif;font-size:.82rem;}
+.inv-li-info h3.pzh{color:var(--pz-l);}
+.inv-li-info h3.hnh{color:var(--hn-l);}
+.inv-li-info p{font-size:.82rem;color:var(--paper2);line-height:1.4;margin-top:.2rem;}
+
+/* TOAST */
+.toast{position:fixed;top:66px;left:50%;transform:translateX(-50%);border-radius:10px;padding:.5rem 1.1rem;font-family:'Cinzel',serif;font-size:.78rem;z-index:300;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.6);pointer-events:none;}
+.toast.pz-t{background:rgba(26,64,96,.96);border:1.5px solid var(--pz-l);color:var(--pz-l);}
+.toast.hn-t{background:rgba(58,40,0,.96);border:1.5px solid var(--hn-l);color:var(--hn-l);}
+.toast.ok-t{background:rgba(26,42,26,.96);border:1.5px solid var(--ok-l);color:var(--ok-l);}
+.toast.show{display:block;animation:toastA 2.8s ease forwards;}
+@keyframes toastA{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}
+
+/* WIN */
+#win{align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,#122212 0%,#050d05 100%);padding:2rem;text-align:center;}
+.win-seal{width:100px;height:100px;border:3px solid var(--ok-l);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:3rem;margin:0 auto 1.2rem;box-shadow:0 0 50px rgba(94,207,122,.3);animation:sealPulse 2s ease-in-out infinite;}
+.win-title{font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--ok-l);margin-bottom:.5rem;}
+.win-msg{font-size:1rem;color:var(--paper2);line-height:1.65;max-width:340px;margin:0 auto 2rem;}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- INTRO -->
+<div class="screen active" id="intro">
+  <div class="intro-seal">🏛️</div>
+  <h1 class="intro-title">Úniková místnost<br>Společenských věd</h1>
+  <p class="intro-sub">Prokáž své znalosti a unikni z knihovny</p>
+  <div class="intro-story">
+    <p>Jsi uvězněn/a v tajné <strong>Vědecké knihovně</strong>. Dveře jsou uzamčeny třemi zámky.</p>
+    <p>Sbírej předměty, studuj dokumenty a dokaž znalosti <strong>ekonomie, práva a politologie</strong>.</p>
+  </div>
+  <div class="intro-legend">
+    <div class="leg-pill leg-pz"><span class="leg-icon">❓</span>OTÁZKOVÝ PŘEDMĚT<br><span style="opacity:.75;font-size:.55rem">Spouští hádanku</span></div>
+    <div class="leg-pill leg-hn"><span class="leg-icon">💡</span>NÁPOVĚDNÝ PŘEDMĚT<br><span style="opacity:.75;font-size:.55rem">Dává informace</span></div>
+  </div>
+  <button class="btn-gold" onclick="startGame()">▶ Vstoupit do místnosti</button>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="game">
+  <div class="topbar">
+    <div class="room-name" id="roomName">📚 Severní stěna</div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="openNotebook()">📓<div class="icon-label">ZÁPISNÍK</div><span class="badge" id="noteBadge">0</span></button>
+      <button class="icon-btn" onclick="openInventory()">🎒<div class="icon-label">INVENTÁŘ</div><span class="badge" id="invBadge">0</span></button>
+      <button class="icon-btn" onclick="useHint()">💡<div class="icon-label" id="hintLbl">3 ZBÝ.</div></button>
+    </div>
+  </div>
+  <div class="progress-strip"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+  <div class="room-view"><div class="room-canvas" id="canvas"></div></div>
+  <div class="bottombar">
+    <div class="inv-label">Předměty v ruce</div>
+    <div class="inv-row" id="invRow"></div>
+  </div>
+</div>
+
+<!-- WIN -->
+<div class="screen" id="win">
+  <div class="win-seal">🎓</div>
+  <h2 class="win-title">Unikl/a jsi!</h2>
+  <p class="win-msg">Prokázal/a jsi hluboké znalosti základů společenských věd. Ekonomie, právo i politologie ti vydaly svá tajemství.</p>
+  <button class="btn-gold" onclick="restartGame()">🔄 Hrát znovu</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="mTitle"></h2>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════
+const ITEMS = {
+  red_book:     {emoji:'📕', name:'Zákon č. 1/1993',       type:'hint',   desc:'Ústava ČR – základní zákon státu. Obsahuje rok vstupu v platnost.'},
+  scroll:       {emoji:'📜', name:'Montesquieu – svitek',  type:'hint',   desc:'"Moc zákonodárná, výkonná a soudní musí být odděleny." – základ ústavní demokracie.'},
+  coin:         {emoji:'🪙', name:'Ekonomická mince',       type:'hint',   desc:'Na jedné straně váha poptávky, na druhé nabídky. Symbol tržní rovnováhy.'},
+  periodic_note:{emoji:'📄', name:'Zápisek o trhu',         type:'hint',   desc:'Útržek: "Tržní selhání → stát zasahuje. Příklady: veřejné statky, externality."'},
+  blue_card:    {emoji:'🃏', name:'Modrá přístupová karta', type:'puzzle', desc:'Karta s reliéfem "1789". Pasuje do finálního zámku dveří.'},
+  magnifier:    {emoji:'🔍', name:'Lupa historika',         type:'hint',   desc:'Zvětšovací sklo. Pomůže odhalit skrytý text v dokumentech.'},
+  skeleton_key: {emoji:'🗝️', name:'Rezavý klíč',            type:'hint',   desc:'Starý klíč s monogramem "MPC". Zatím nenašel správný zámek.'},
+  triangle:     {emoji:'🔺', name:'Pyramida moci',          type:'puzzle', desc:'Dřevěná pyramida s otázkou: Kdo stojí na vrcholu zákonodárné moci?'},
+};
+
+const PUZZLES = {
+  law_code:{
+    type:'input', title:'⚖️ Zákonná šifra',
+    intro:'Na štítku nad vitrinou:\n\n"Zadej rok, kdy vstoupila v platnost Ústava České republiky."',
+    answer:'1993',
+    hint:'Ústava ČR vstoupila v platnost 1. ledna roku po rozdělení Československa.',
+    noteTitle:'Ústava ČR – 1993', noteText:'Zákon č. 1/1993 Sb. Přijata 16. 12. 1992, účinná od 1. 1. 1993. Nejvyšší právní síla.',
+    rewardItem:'blue_card', door:1,
+  },
+  market_quiz:{
+    type:'quiz', title:'📊 Ekonomická hádanka',
+    intro:'Otázka na tabuli:\n\n"Co se stane s cenou, když poptávka roste a nabídka zůstává stejná?"',
+    options:['Cena klesá','Cena roste','Cena se nemění','Trh se uzavře'], correct:1,
+    hint:'Zákon nabídky a poptávky: více zájemců o stejné množství = tlak na zvýšení ceny.',
+    noteTitle:'Zákon nabídky a poptávky', noteText:'Při růstu poptávky a konstantní nabídce cena roste. Trh hledá nový rovnovážný bod.',
+    rewardItem:null, door:2,
+  },
+  state_power:{
+    type:'quiz', title:'🏛️ Dělba moci',
+    intro:'Pyramida moci se otevřela. Otázka uvnitř:\n\n"Kdo vykonává zákonodárnou moc v České republice?"',
+    options:['Prezident ČR','Parlament ČR','Ústavní soud','Vláda ČR'], correct:1,
+    hint:'Zákonodárnou moc vykonává dvoukomorový zastupitelský sbor – Poslanecká sněmovna a Senát.',
+    noteTitle:'Zákonodárná moc v ČR', noteText:'Vykonává ji Parlament ČR – Poslanecká sněmovna (200 poslanců) a Senát (81 senátorů).',
+    rewardItem:null, door:3,
+  },
+  final_lock:{
+    type:'input', title:'🚪 Finální zámek',
+    intro:'Poslední zámek. Rytina říká:\n\n"Rok velké revoluce svobody – LIBERTÉ.\nČíslo je na modré kartě."',
+    answer:'1789',
+    hint:'Francouzská revoluce 1789. Heslo: Liberté, Égalité, Fraternité (Svoboda, Rovnost, Bratrství).',
+    noteTitle:'Francouzská revoluce 1789', noteText:'Základ moderní demokracie. Vznik Deklarace práv člověka a občana.',
+    rewardItem:null, door:null, isFinal:true, needItem:'blue_card',
+  },
+};
+
+const G = {inv:[],sel:null,notes:[],noteSet:new Set(),solved:new Set(),doors:0,hints:3,view:'main'};
+const VIEWS = ['left','main','right'];
+
+// ══════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════
+function renderRoom(){
+  const c = document.getElementById('canvas');
+  c.innerHTML = '';
+  c.innerHTML = `
+    <div class="room-bg"></div>
+    <div class="room-ceiling"></div>
+    <div class="wall-grid"></div>
+    <div style="position:absolute;left:0;right:0;top:12%;height:3px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.28),transparent);pointer-events:none"></div>
+    <div style="position:absolute;left:0;right:0;bottom:26%;height:3px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.28),transparent);pointer-events:none"></div>
+    <div class="room-floor"></div>
+    <div class="view-label">${{main:'Severní stěna · Hlavní dveře',left:'Západní stěna · Pracovní stůl',right:'Východní stěna · Vitrina'}[G.view]}</div>
+  `;
+  document.getElementById('roomName').textContent = '📚 '+{main:'Severní stěna',left:'Pracovní stůl',right:'Vitrina'}[G.view];
+  ({main:renderMain,left:renderLeft,right:renderRight}[G.view])(c);
+
+  // Navigace
+  const idx = VIEWS.indexOf(G.view);
+  const nav = document.createElement('div');
+  nav.className = 'nav-row';
+  nav.innerHTML = `
+    <button class="nav-btn" onclick="goView('${VIEWS[(idx-1+3)%3]}')">◀</button>
+    <button class="nav-btn" onclick="goView('${VIEWS[(idx+1)%3]}')">▶</button>
+  `;
+  c.appendChild(nav);
+
+  const leg = document.createElement('div');
+  leg.className = 'legend-strip';
+  leg.innerHTML = '<div class="leg-strip pz">❓ Hádanka</div><div class="leg-strip hn">💡 Nápověda</div>';
+  c.appendChild(leg);
+
+  updateBar();
+}
+
+function renderMain(c){
+  mkCandle(c,'12%','19%');
+  mkCandle(c,'78%','19%');
+
+  // Knihovna
+  const shelf = mk('div','shelf-unit');
+  shelf.style.cssText = 'left:1%;top:22%;width:20%;height:54%;';
+  [['#4a2a10','#c8a84b','PRÁVO',4],['#1a3040','#4ab3f4','EKONOMIE',16],['#2a1a30','#c878f4','SOCIOLOGIE',28],['#1a3a20','#5ecf7a','POLITIKA',40],['#3a1a10','#f4a832','DĚJINY',52]].forEach(([bg,col,txt,l])=>{
+    const s = mk('div','shelf-spine');
+    s.style.cssText = `left:${l}%;top:4%;width:3%;height:88%;background:${bg};border:1px solid rgba(200,168,75,.2);color:${col};font-size:.4rem;`;
+    s.textContent = txt; shelf.appendChild(s);
+  });
+  c.appendChild(shelf);
+
+  // Dveře
+  const door = document.createElement('button');
+  door.className = 'door-btn';
+  door.style.cssText = 'left:33%;top:22%;width:30%;height:56%;';
+  door.onclick = inspectDoor;
+  door.innerHTML = `
+    <div class="door-panel" style="height:40%;margin-bottom:4px;"></div>
+    <div class="door-panel" style="height:40%;"></div>
+    <div class="door-knob"></div>
+    <div class="door-locks">
+      ${[0,1,2].map(i=>`<div class="lock-pip ${G.doors>i?'open':'locked'}">${G.doors>i?'✓':'🔒'}</div>`).join('')}
+    </div>`;
+  c.appendChild(door);
+
+  // Tabule s citátem
+  const board = document.createElement('button');
+  board.className = 'board-btn';
+  board.style.cssText = 'right:2%;top:22%;width:28%;height:40%;';
+  board.onclick = inspectPortrait;
+  board.innerHTML = `<div class="board-inner"><div class="chalk-text" style="font-size:.56rem">"Zákonodárná,<br>výkonná a soudní<br>moc musí být<br>odděleny."<br><span style="color:rgba(200,168,75,.6);font-size:.5rem">— Montesquieu</span></div></div>`;
+  c.appendChild(board);
+
+  // Svitek
+  if(!G.inv.includes('scroll')) c.appendChild(mkCard('scroll','right:3%','bottom:28%','13%','13%'));
+
+  // Finální tlačítko
+  if(G.doors>=3 && !G.solved.has('final_lock')){
+    const fb = document.createElement('button');
+    fb.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);bottom:28%;background:linear-gradient(135deg,#c8a84b,#e6c96a);color:#1a1006;padding:.7rem 1.3rem;border-radius:8px;font-family:Cinzel,serif;font-size:.82rem;min-height:52px;touch-action:manipulation;box-shadow:0 4px 16px rgba(200,168,75,.4);z-index:10;';
+    fb.textContent = '🔓 Odemknout finální zámek';
+    fb.onclick = ()=>startPuzzle('final_lock');
+    c.appendChild(fb);
+  }
+}
+
+function renderLeft(c){
+  mkCandle(c,'8%','24%');
+
+  const tt = mk('div','table-surface');
+  tt.style.cssText = 'left:8%;top:52%;width:84%;height:7%;'; c.appendChild(tt);
+  ['13%','80%'].forEach(l=>{const lg=mk('div','table-leg');lg.style.cssText=`left:${l};top:59%;width:3.5%;height:12%;`;c.appendChild(lg);});
+
+  // Tabule nápis – non-interactive
+  const bd = mk('div','');
+  bd.style.cssText = 'position:absolute;left:22%;top:18%;width:56%;height:26%;pointer-events:none;';
+  bd.innerHTML = `<div class="board-inner"><div class="chalk-text">EKONOMIE<br><span style="font-size:.52rem;opacity:.65">Nabídka · Poptávka · Tržní selhání</span></div></div>`;
+  c.appendChild(bd);
+
+  // Předměty
+  if(!G.inv.includes('red_book'))      c.appendChild(mkCard('red_book',     'left:10%','top:37%','17%','17%'));
+  if(!G.inv.includes('periodic_note')) c.appendChild(mkCard('periodic_note','left:36%','top:41%','16%','13%'));
+  if(!G.inv.includes('magnifier'))     c.appendChild(mkCard('magnifier',    'left:60%','top:39%','14%','14%'));
+  if(G.solved.has('law_code') && !G.inv.includes('blue_card'))
+    c.appendChild(mkCard('blue_card','left:76%','top:40%','16%','15%'));
+
+  const pp = mkPuzzleBtn('📊','Ekonomická hádanka',!G.solved.has('market_quiz'));
+  pp.style.width = '78%';
+  pp.onclick = ()=>G.solved.has('market_quiz')?showInfo('Ekonomická hádanka','✅ Hádanka již vyřešena!'):startPuzzle('market_quiz');
+  c.appendChild(pp);
+}
+
+function renderRight(c){
+  mkCandle(c,'82%','24%');
+
+  const cab = mk('div','cabinet');
+  cab.style.cssText = 'left:10%;top:19%;width:80%;height:57%;'; c.appendChild(cab);
+  ['36%','52%'].forEach(t=>{
+    const s = document.createElement('div');
+    s.style.cssText = `position:absolute;left:10%;top:${t};width:80%;height:2px;background:rgba(200,168,75,.15);pointer-events:none;`;
+    c.appendChild(s);
+  });
+
+  if(!G.inv.includes('skeleton_key')) c.appendChild(mkCard('skeleton_key','left:14%','top:24%','16%','15%'));
+  if(!G.inv.includes('coin'))         c.appendChild(mkCard('coin',        'left:38%','top:24%','16%','15%'));
+  if(!G.inv.includes('triangle'))     c.appendChild(mkCard('triangle',    'left:63%','top:22%','18%','18%'));
+
+  const lp = mkPuzzleBtn('⚖️','Zákonný zámek',!G.solved.has('law_code'));
+  lp.style.width = '78%';
+  lp.onclick = ()=>G.solved.has('law_code')?showInfo('Zákonný zámek','✅ Kód jsi již zadal/a správně.'):startPuzzle('law_code');
+  c.appendChild(lp);
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function mk(tag,cls){const e=document.createElement(tag);if(cls)e.className=cls;return e;}
+
+function mkCandle(c,left,top){
+  const s=mk('div','sconce');
+  s.style.cssText=`position:absolute;left:${left};top:${top};z-index:3;`;
+  s.innerHTML='<div class="flame"></div><div class="candle-body"></div><div class="sconce-arm"></div>';
+  c.appendChild(s);
+}
+
+function mkCard(id,leftStr,topStr,width,height){
+  const item=ITEMS[id];
+  const isPz=item.type==='puzzle';
+  // KRITICKÉ: button tag, ne div
+  const btn=document.createElement('button');
+  btn.className='hotspot-btn';
+  btn.style.cssText=`${leftStr};${topStr};width:${width};height:${height};`;
+  btn.innerHTML=`<div class="item-card ${isPz?'pz':'hn'}"><div class="card-emoji">${item.emoji}</div><div class="card-name">${item.name}</div></div>`;
+  btn.onclick=()=>tapItem(id);
+  return btn;
+}
+
+function mkPuzzleBtn(icon,label,active){
+  const btn=document.createElement('button');
+  btn.className=`puzzle-btn ${active?'active':'done'}`;
+  btn.innerHTML=`<span style="font-size:1.1rem">${icon}</span><span>${active?'❓ '+label:'✓ '+label+' – vyřešeno'}</span>`;
+  return btn;
+}
+
+// ══════════════════════════════════════════
+//  ITEM TAP
+// ══════════════════════════════════════════
+function tapItem(id){
+  const item=ITEMS[id];
+  const isPz=item.type==='puzzle';
+  if(G.inv.includes(id)){showItemDetail(id);return;}
+  G.inv.push(id);updateBar();
+  notify(`${item.emoji} ${item.name}`,isPz?'pz':'hn');
+  if(item.type==='hint'){addNote(item.name,item.desc);showItemDetail(id);}
+  else if(id==='triangle'){setTimeout(()=>startPuzzle('state_power'),350);}
+  else{showItemDetail(id);}
+  renderRoom();
+}
+
+function showItemDetail(id){
+  const item=ITEMS[id];
+  const isPz=item.type==='puzzle';
+  const dc=isPz?'pz-dc':'hn-dc';
+  const hcls=isPz?'pzh':'hnh';
+  const bcls=isPz?'pz-badge':'hn-badge';
+  const btxt=isPz?'❓ OTÁZKOVÝ PŘEDMĚT – spouští hádanku':'💡 NÁPOVĚDNÝ PŘEDMĚT – dává informace';
+  const puzzleId=id==='triangle'?'state_power':id==='blue_card'?'final_lock':null;
+  openModal(item.emoji+' '+item.name,`
+    <div class="item-detail-card ${dc}">
+      <div class="detail-icon">${item.emoji}</div>
+      <div class="detail-meta">
+        <div class="type-badge ${bcls}">${btxt}</div>
+        <h3 class="${hcls}">${item.name}</h3>
+        <p style="font-size:.87rem;color:var(--paper2);margin-top:.3rem;line-height:1.5">${item.desc}</p>
+      </div>
+    </div>
+    ${isPz&&puzzleId?`<button class="btn-check" onclick="closeModal();setTimeout(()=>startPuzzle('${puzzleId}'),220)">▶ Spustit hádanku</button>`:''}
+    <button class="modal-close" onclick="closeModal()">Zavřít</button>
+  `);
+}
+
+// ══════════════════════════════════════════
+//  INSPECT
+// ══════════════════════════════════════════
+function inspectDoor(){
+  if(G.doors>=3)startPuzzle('final_lock');
+  else openModal('🚪 Hlavní dveře',`<div class="modal-body"><p>Masivní dubové dveře. Zajištěny třemi zámky.</p><p style="font-family:Cinzel,serif;color:var(--gold2)">Odemčeno: ${G.doors} / 3</p><p>Vyřeš hádanky u stolu a ve vitrině.</p></div><button class="modal-close" onclick="closeModal()">Zavřít</button>`);
+}
+function inspectPortrait(){
+  addNote('Montesquieu – dělba moci','Zákonodárná, výkonná a soudní moc musí být odděleny. Základ liberální demokracie, 18. stol.');
+  openModal('🖼️ Montesquieu',`<div class="modal-body"><p style="font-style:italic;color:var(--gold2)">"Moc zákonodárná, výkonná a soudní musí být odděleny."</p><p>Teorie dělby moci z 18. století, základ moderních ústavních demokracií.</p><p style="font-family:Cinzel,serif;font-size:.72rem;color:rgba(200,168,75,.6)">💡 Přidáno do zápisníku</p></div><button class="modal-close" onclick="closeModal()">Zavřít</button>`);
+}
+
+// ══════════════════════════════════════════
+//  PUZZLES
+// ══════════════════════════════════════════
+function startPuzzle(id){
+  if(!id)return;
+  const p=PUZZLES[id];if(!p)return;
+  if(G.solved.has(id)){showInfo('Hádanka','✅ Tuto hádanku jsi již vyřešil/a!');return;}
+  if(p.needItem&&!G.inv.includes(p.needItem)){
+    const it=ITEMS[p.needItem];
+    openModal('🔒 Chybí předmět',`<div class="modal-body"><p>Tento zámek potřebuje: <strong style="color:var(--pz-l)">${it.emoji} ${it.name}</strong></p><p>${it.desc}</p></div><button class="modal-close" onclick="closeModal()">Zavřít</button>`);
+    return;
+  }
+  if(p.type==='input'){
+    openModal(p.title,`
+      <div class="modal-body"><p style="white-space:pre-line">${p.intro}</p></div>
+      <input class="puzzle-input" id="pzIn" type="number" inputmode="numeric" placeholder="····"
+        onkeydown="if(event.key==='Enter')checkInput('${id}')">
+      <button class="btn-check" onclick="checkInput('${id}')">✔ Potvrdit kód</button>
+      <div class="feedback" id="pzFb"></div>
+      <button class="modal-close" onclick="closeModal()">Zavřít</button>
+    `);
+    setTimeout(()=>{const el=document.getElementById('pzIn');if(el)el.focus();},350);
+  } else {
+    const opts=p.options.map((o,i)=>`<button class="quiz-opt" id="qo${i}" onclick="checkQuiz('${id}',${i})">${o}</button>`).join('');
+    openModal(p.title,`
+      <div class="modal-body"><p style="white-space:pre-line">${p.intro}</p></div>
+      <div class="quiz-grid">${opts}</div>
+      <div class="feedback" id="pzFb"></div>
+      <button class="modal-close" onclick="closeModal()">Zavřít</button>
+    `);
+  }
+}
+
+function checkInput(id){
+  const val=(document.getElementById('pzIn')?.value||'').trim();
+  const p=PUZZLES[id];const fb=document.getElementById('pzFb');
+  if(val===p.answer)solvePuzzle(id,p,fb);
+  else{fb.className='feedback err';fb.textContent='✗ Nesprávný kód. Zkus znovu.';}
+}
+
+function checkQuiz(id,idx){
+  const p=PUZZLES[id];const fb=document.getElementById('pzFb');
+  document.querySelectorAll('.quiz-opt').forEach(b=>b.disabled=true);
+  if(idx===p.correct){
+    document.getElementById('qo'+idx).classList.add('correct');
+    solvePuzzle(id,p,fb);
+  } else {
+    document.getElementById('qo'+idx).classList.add('wrong');
+    document.getElementById('qo'+p.correct).classList.add('correct');
+    fb.className='feedback err';
+    fb.textContent=`✗ Špatně. Správná odpověď: ${p.options[p.correct]}`;
+    setTimeout(closeModal,3000);
+  }
+}
+
+function solvePuzzle(id,p,fb){
+  if(G.solved.has(id))return;
+  G.solved.add(id);
+  if(p.rewardItem&&!G.inv.includes(p.rewardItem))G.inv.push(p.rewardItem);
+  if(p.door)G.doors=Math.max(G.doors,p.door);
+  addNote(p.noteTitle,p.noteText);
+  updateProgress();
+  fb.className='feedback ok';fb.textContent='✓ Správně! Hádanka vyřešena.';
+  if(p.isFinal){setTimeout(()=>{closeModal();winGame();},1200);return;}
+  setTimeout(()=>{
+    closeModal();renderRoom();
+    notify('🔓 Zámek odemčen!','ok');
+    if(id==='law_code')setTimeout(()=>notify('🃏 Modrá karta se objevila na pracovním stole!','pz'),1300);
+  },1500);
+}
+
+// ══════════════════════════════════════════
+//  INVENTORY
+// ══════════════════════════════════════════
+function updateBar(){
+  const row=document.getElementById('invRow');row.innerHTML='';
+  for(let i=0;i<5;i++){
+    const slot=document.createElement('div');
+    if(G.inv[i]){
+      const it=ITEMS[G.inv[i]];const isPz=it.type==='puzzle';
+      slot.className=`inv-slot has-item ${isPz?'pz-slot':'hn-slot'} ${G.sel===G.inv[i]?'sel':''}`;
+      slot.innerHTML=`<span class="slot-emoji">${it.emoji}</span><span class="slot-dot"></span>`;
+      const itemId=G.inv[i];
+      slot.onclick=()=>{G.sel=itemId;updateBar();showItemDetail(itemId);};
+    } else {slot.className='inv-slot';}
+    row.appendChild(slot);
+  }
+  document.getElementById('invBadge').textContent=G.inv.length;
+}
+
+function openInventory(){
+  if(!G.inv.length){openModal('🎒 Inventář','<div class="modal-body"><p style="text-align:center;opacity:.6">Zatím nic nemáš. Prozkoumej místnost!</p></div><button class="modal-close" onclick="closeModal()">Zavřít</button>');return;}
+  const list=G.inv.map(id=>{
+    const it=ITEMS[id];const isPz=it.type==='puzzle';
+    return `<div class="inv-li ${isPz?'pz-li':'hn-li'}" onclick="closeModal();setTimeout(()=>showItemDetail('${id}'),220)">
+      <span class="inv-li-icon">${it.emoji}</span>
+      <div class="inv-li-info">
+        <div class="type-badge ${isPz?'pz-badge':'hn-badge'}" style="font-size:.5rem">${isPz?'❓ OTÁZKOVÝ':'💡 NÁPOVĚDNÝ'}</div>
+        <h3 class="${isPz?'pzh':'hnh'}">${it.name}</h3>
+        <p>${it.desc}</p>
+      </div>
+    </div>`;
+  }).join('');
+  openModal('🎒 Inventář',list+'<button class="modal-close" onclick="closeModal()">Zavřít</button>');
+}
+
+// ══════════════════════════════════════════
+//  ZÁPISNÍK
+// ══════════════════════════════════════════
+function addNote(title,text){
+  if(G.noteSet.has(title))return;
+  G.noteSet.add(title);G.notes.push({title,text});
+  document.getElementById('noteBadge').textContent=G.notes.length;
+}
+function openNotebook(){
+  if(!G.notes.length){openModal('📓 Zápisník','<div class="modal-body"><p style="text-align:center;opacity:.6">Zápisník je prázdný. Sbírej nápovědné předměty!</p></div><button class="modal-close" onclick="closeModal()">Zavřít</button>');return;}
+  const entries=G.notes.map(n=>`<div class="nb-entry"><h4>📌 ${n.title}</h4><p>${n.text}</p></div>`).join('');
+  openModal('📓 Vědecký zápisník',entries+'<button class="modal-close" onclick="closeModal()">Zavřít</button>');
+}
+
+// ══════════════════════════════════════════
+//  NÁPOVĚDA
+// ══════════════════════════════════════════
+function useHint(){
+  if(G.hints<=0){showInfo('Nápovědy','Nemáš žádné nápovědy.');return;}
+  const unsolved=Object.entries(PUZZLES).filter(([id])=>!G.solved.has(id));
+  if(!unsolved.length){showInfo('Nápovědy','Všechny hádanky jsou vyřešeny!');return;}
+  G.hints--;document.getElementById('hintLbl').textContent=G.hints+' ZBÝ.';
+  const [,p]=unsolved[0];
+  openModal('💡 Nápověda',`<div class="modal-body"><p>${p.hint}</p></div><button class="modal-close" onclick="closeModal()">Zavřít</button>`);
+}
+
+// ══════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════
+function openModal(title,body){
+  document.getElementById('mTitle').innerHTML=title;
+  document.getElementById('mBody').innerHTML=body;
+  document.getElementById('modal').classList.add('open');
+}
+function showInfo(t,m){openModal(t,`<div class="modal-body"><p>${m}</p></div><button class="modal-close" onclick="closeModal()">Zavřít</button>`);}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+
+// Zavření tapem mimo modal sheet
+document.getElementById('modal').addEventListener('click',function(e){
+  if(e.target===this)closeModal();
+});
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+function notify(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type}-t show`;
+  setTimeout(()=>t.className='toast',2900);
+}
+
+// ══════════════════════════════════════════
+//  PROGRESS
+// ══════════════════════════════════════════
+function updateProgress(){
+  const main=['law_code','market_quiz','state_power'];
+  const done=main.filter(id=>G.solved.has(id)).length;
+  document.getElementById('progFill').style.width=(done/main.length*100)+'%';
+}
+
+// ══════════════════════════════════════════
+//  WIN / START / RESTART
+// ══════════════════════════════════════════
+function winGame(){
+  document.getElementById('progFill').style.width='100%';
+  setTimeout(()=>{
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('win').classList.add('active');
+  },700);
+}
+function startGame(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('game').classList.add('active');
+  G.view='main';renderRoom();
+}
+function restartGame(){
+  Object.assign(G,{inv:[],sel:null,notes:[],noteSet:new Set(),solved:new Set(),doors:0,hints:3,view:'main'});
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('intro').classList.add('active');
+}
+function goView(v){G.view=v;renderRoom();}
+</script>
+</body>
+</html>
