@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Úniková hra – Soudní síň</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --gold-dark: #7a5c1e;
+    --dark: #0d0b08;
+    --surface: #1a1510;
+    --surface2: #221d14;
+    --text: #e8dfc8;
+    --text-dim: #8a7a5a;
+    --red: #8b1a1a;
+    --green: #1a5c2a;
+    --green-light: #2dbd5c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'IM Fell English', serif;
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Papírová textura overlay */
+body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(201,168,76,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(201,168,76,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Svíčky - dekorativní prvky */
+.candle {
+    position: fixed;
+    bottom: 0;
+    width: 18px;
+    pointer-events: none;
+    z-index: 1;
+}
+.candle.left { left: 8%; }
+.candle.right { right: 8%; }
+.candle-body {
+    width: 18px;
+    height: 80px;
+    background: linear-gradient(to right, #d4c47a, #fffde8, #d4c47a);
+    border-radius: 4px 4px 2px 2px;
+}
+.candle-flame {
+    width: 12px;
+    height: 22px;
+    background: radial-gradient(ellipse at 50% 80%, #ff9500, #ffcc00 40%, #fff7e6 80%, transparent);
+    border-radius: 50% 50% 30% 30%;
+    margin: 0 auto -4px;
+    animation: flicker 1.8s ease-in-out infinite alternate;
+    filter: blur(0.5px);
+}
+.candle-glow {
+    position: absolute;
+    top: -30px; left: 50%;
+    transform: translateX(-50%);
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, rgba(255,180,50,0.18) 0%, transparent 70%);
+    animation: flicker 1.8s ease-in-out infinite alternate;
+}
+@keyframes flicker {
+    0% { transform: translateX(-50%) scaleX(1) scaleY(1); opacity: 0.9; }
+    33% { transform: translateX(-52%) scaleX(0.95) scaleY(1.05); opacity: 1; }
+    66% { transform: translateX(-48%) scaleX(1.05) scaleY(0.97); opacity: 0.85; }
+    100% { transform: translateX(-50%) scaleX(0.98) scaleY(1.02); opacity: 0.95; }
+}
+
+/* Hlavní kontejner */
+.container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 480px;
+    padding: 20px;
+}
+
+/* Nadpis */
+.game-title {
+    text-align: center;
+    margin-bottom: 28px;
+    animation: fadeDown 0.8s ease both;
+}
+.game-title h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(201,168,76,0.5), 0 2px 4px rgba(0,0,0,0.8);
+    letter-spacing: 3px;
+    line-height: 1.1;
+}
+.game-title .subtitle {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Dekorativní dělicí čára */
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0;
+}
+.divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-dark), transparent);
+}
+.divider-icon { color: var(--gold); font-size: 14px; }
+
+/* Karty místností */
+.room-card {
+    background: var(--surface);
+    border: 1px solid var(--gold-dark);
+    border-radius: 4px;
+    padding: 28px 24px;
+    position: relative;
+    animation: fadeUp 0.6s ease both;
+    box-shadow:
+        0 0 0 1px rgba(0,0,0,0.8),
+        inset 0 1px 0 rgba(201,168,76,0.1),
+        0 20px 60px rgba(0,0,0,0.6);
+}
+/* Rohové ozdoby */
+.room-card::before, .room-card::after {
+    content: '✦';
+    position: absolute;
+    color: var(--gold-dark);
+    font-size: 10px;
+}
+.room-card::before { top: 8px; left: 10px; }
+.room-card::after { bottom: 8px; right: 10px; }
+
+.room-number {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.room-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    color: var(--gold-light);
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.room-desc {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+/* Zeď (interaktivní) */
+.wall-scene {
+    position: relative;
+    height: 180px;
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 38px,
+            rgba(255,255,255,0.02) 38px,
+            rgba(255,255,255,0.02) 40px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 78px,
+            rgba(255,255,255,0.015) 78px,
+            rgba(255,255,255,0.015) 80px
+        ),
+        linear-gradient(135deg, #1c1410 0%, #0e0b07 50%, #1a1208 100%);
+    border-radius: 4px;
+    border: 1px solid rgba(201,168,76,0.15);
+    margin-bottom: 18px;
+    overflow: hidden;
+}
+
+/* Pochodeň na zdi */
+.torch {
+    position: absolute;
+    top: 15px; left: 15px;
+    font-size: 20px;
+    filter: drop-shadow(0 0 8px rgba(255,150,0,0.6));
+    animation: torchFlicker 2s ease-in-out infinite alternate;
+}
+@keyframes torchFlicker {
+    0% { filter: drop-shadow(0 0 6px rgba(255,150,0,0.5)); }
+    100% { filter: drop-shadow(0 0 14px rgba(255,200,0,0.8)); }
+}
+
+/* Schovka */
+.hidden-spot {
+    position: absolute;
+    width: 70px; height: 70px;
+    top: 55%; left: 65%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px dashed rgba(201,168,76,0.0);
+    transition: all 0.3s;
+    animation: pulse 3s ease-in-out infinite;
+}
+.hidden-spot:hover {
+    border-color: rgba(201,168,76,0.4);
+    background: rgba(201,168,76,0.05);
+}
+.hidden-spot:hover::after {
+    content: '?';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(201,168,76,0.4);
+    font-size: 24px;
+    font-family: 'Cinzel', serif;
+}
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+    50% { box-shadow: 0 0 0 8px rgba(201,168,76,0.06); }
+}
+
+/* Nápověda */
+.hint-box {
+    display: none;
+    background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.04));
+    border: 1px solid rgba(201,168,76,0.3);
+    border-left: 3px solid var(--gold);
+    border-radius: 3px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-style: italic;
+    color: var(--gold-light);
+    font-size: 0.95rem;
+    animation: fadeUp 0.4s ease both;
+}
+.hint-box.visible { display: block; }
+.hint-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+/* Progress bar */
+.progress-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+.progress-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--gold-dark);
+    background: transparent;
+    transition: all 0.4s;
+}
+.progress-dot.done {
+    background: var(--gold);
+    box-shadow: 0 0 8px rgba(201,168,76,0.6);
+}
+.progress-dot.active {
+    border-color: var(--gold);
+    box-shadow: 0 0 6px rgba(201,168,76,0.4);
+    animation: blink 1.5s ease-in-out infinite;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Input */
+.input-group {
+    position: relative;
+    margin-bottom: 10px;
+}
+.input-group label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+input {
+    width: 100%;
+    padding: 13px 16px;
+    font-size: 1rem;
+    font-family: 'IM Fell English', serif;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--gold-dark);
+    border-radius: 3px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    letter-spacing: 1px;
+}
+input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(201,168,76,0.15), inset 0 0 20px rgba(201,168,76,0.03);
+}
+input::placeholder { color: var(--text-dim); font-style: italic; }
+
+/* Tlačítko */
+.btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 0.9rem;
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+    color: var(--gold-light);
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 4px;
+}
+.btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+.btn:hover { box-shadow: 0 0 20px rgba(201,168,76,0.25); color: var(--gold); }
+.btn:hover::before { opacity: 1; }
+.btn:active { transform: scale(0.98); }
+
+/* Zpráva */
+.msg {
+    min-height: 24px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    text-align: center;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+}
+.msg.error { color: #e05050; }
+.msg.success { color: var(--green-light); }
+
+/* Win obrazovka */
+.win-card {
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    padding: 40px 28px;
+    text-align: center;
+    animation: fadeUp 0.8s ease both;
+    box-shadow: 0 0 60px rgba(201,168,76,0.2), inset 0 0 40px rgba(201,168,76,0.03);
+}
+.win-icon {
+    font-size: 3.5rem;
+    display: block;
+    margin-bottom: 16px;
+    animation: winPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+@keyframes winPop {
+    from { transform: scale(0) rotate(-20deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+}
+.win-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    color: var(--gold);
+    font-weight: 900;
+    text-shadow: 0 0 30px rgba(201,168,76,0.5);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+.win-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 28px;
+    line-height: 1.6;
+}
+.win-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+.win-stat {
+    text-align: center;
+}
+.win-stat-value {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    display: block;
+}
+.win-stat-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Utilities */
+.hidden { display: none !important; }
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Shake animace */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+.shake { animation: shake 0.4s ease; }
+
+/* Zlomový efekt při správné odpovědi */
+@keyframes unlockFlash {
+    0% { box-shadow: inset 0 0 0 rgba(45,189,92,0); }
+    50% { box-shadow: inset 0 0 30px rgba(45,189,92,0.15); }
+    100% { box-shadow: inset 0 0 0 rgba(45,189,92,0); }
+}
+
+/* ===== MÍSTNOST 3 – MINCOVÝ AUTOMAT ===== */
+.coin-scene {
+    position: relative;
+    height: 260px;
+    background:
+        radial-gradient(ellipse at 30% 80%, rgba(201,168,76,0.06) 0%, transparent 60%),
+        repeating-linear-gradient(90deg, transparent, transparent 38px, rgba(255,255,255,0.012) 38px, rgba(255,255,255,0.012) 40px),
+        linear-gradient(160deg, #1a1208 0%, #0d0b07 60%, #1c1510 100%);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 4px;
+    margin-bottom: 16px;
+    overflow: visible;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 40px;
+    padding-bottom: 14px;
+}
+
+/* Automat */
+.machine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
+    transition: filter 0.4s;
+}
+.machine-top {
+    width: 70px; height: 28px;
+    background: linear-gradient(135deg, #2a2010, #1a1508);
+    border: 1px solid var(--gold-dark);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.machine-eye {
+    font-size: 16px;
+    transition: transform 0.3s, filter 0.3s;
+    filter: grayscale(1) brightness(0.5);
+}
+.machine-eye.awake {
+    filter: grayscale(0) brightness(1.2);
+    animation: eyePulse 1.5s ease-in-out infinite;
+}
+@keyframes eyePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+.machine-body {
+    width: 90px;
+    background: linear-gradient(160deg, #221a0c, #120e06);
+    border: 1px solid var(--gold-dark);
+    border-radius: 2px;
+    padding: 10px 8px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.machine-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.42rem;
+    letter-spacing: 1px;
+    color: var(--gold-dark);
+    text-align: center;
+    line-height: 1.4;
+}
+.machine-slot {
+    width: 36px; height: 10px;
+    background: #060503;
+    border: 1px solid var(--gold-dark);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    transition: box-shadow 0.3s;
+}
+.machine-slot.dragover {
+    box-shadow: 0 0 10px rgba(201,168,76,0.6);
+    border-color: var(--gold);
+}
+.slot-arrow {
+    font-size: 8px;
+    color: var(--gold-dark);
+    animation: arrowBounce 1.2s ease-in-out infinite;
+}
+@keyframes arrowBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(2px); }
+}
+.machine-screen {
+    width: 74px; min-height: 40px;
+    background: #060e04;
+    border: 1px solid #1a3a10;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px;
+    font-size: 0.5rem;
+    text-align: center;
+    line-height: 1.5;
+    color: #4caf50;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+}
+.screen-idle { color: #2a5c1e; font-style: italic; }
+.machine-legs {
+    width: 60px; height: 18px;
+    background: linear-gradient(to right,
+        transparent 12px, #1a1208 12px, #1a1208 24px,
+        transparent 24px, transparent 36px,
+        #1a1208 36px, #1a1208 48px, transparent 48px);
+    border-top: 1px solid var(--gold-dark);
+}
+
+/* Mince */
+.coin-wrapper {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.coin {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #f0d060, #c9a84c 50%, #8a6820 100%);
+    border: 2px solid #f0d080;
+    box-shadow:
+        0 0 0 1px rgba(0,0,0,0.4),
+        inset 0 2px 4px rgba(255,255,200,0.3),
+        0 4px 12px rgba(201,168,76,0.4),
+        0 0 20px rgba(201,168,76,0.2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: grab;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #7a5010;
+    text-shadow: 0 1px 2px rgba(255,220,100,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: coinSpin 6s ease-in-out infinite;
+    user-select: none;
+    position: relative;
+}
+.coin:hover {
+    transform: scale(1.1) translateY(-3px);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,200,0.3), 0 8px 24px rgba(201,168,76,0.6), 0 0 30px rgba(201,168,76,0.35);
+    cursor: grab;
+}
+.coin:active { cursor: grabbing; transform: scale(1.05); }
+.coin.used {
+    opacity: 0.25;
+    filter: grayscale(1);
+    pointer-events: none;
+    animation: none;
+}
+.coin-inner { pointer-events: none; }
+@keyframes coinSpin {
+    0%, 100% { transform: rotateY(0deg); box-shadow: 0 4px 12px rgba(201,168,76,0.4), 0 0 20px rgba(201,168,76,0.2); }
+    45% { transform: rotateY(180deg); box-shadow: 0 4px 12px rgba(201,168,76,0.15), 0 0 10px rgba(201,168,76,0.1); }
+    50% { transform: rotateY(180deg); }
+    95% { transform: rotateY(360deg); box-shadow: 0 4px 12px rgba(201,168,76,0.4), 0 0 20px rgba(201,168,76,0.2); }
+}
+.coin-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+}
+
+/* Vlnění automatu po vhození */
+@keyframes machineShake {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    15% { transform: translateX(-3px) rotate(-1deg); }
+    30% { transform: translateX(3px) rotate(1deg); }
+    45% { transform: translateX(-2px) rotate(-0.5deg); }
+    60% { transform: translateX(2px) rotate(0.5deg); }
+    75% { transform: translateX(-1px); }
+}
+.machine.activated { animation: machineShake 0.5s ease; }
+
+/* Typing efekt na obrazovce */
+@keyframes blink-cursor {
+    0%, 100% { border-right-color: #4caf50; }
+    50% { border-right-color: transparent; }
+}
+
+/* ===== KONEC MÍSTNOSTI 3 CSS ===== */
+
+/* ===== SUCCESS OVERLAY ===== */
+.success-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease both;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+.success-panel {
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 30px 26px 24px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 0 60px rgba(201,168,76,0.25), 0 20px 60px rgba(0,0,0,0.7);
+    animation: popUp 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes popUp {
+    from { transform: scale(0.85) translateY(20px); opacity: 0; }
+    to   { transform: scale(1) translateY(0);        opacity: 1; }
+}
+.success-panel::before, .success-panel::after {
+    content: '✦';
+    position: absolute;
+    color: var(--gold-dark);
+    font-size: 10px;
+}
+.success-panel::before { top: 8px; left: 10px; }
+.success-panel::after  { bottom: 8px; right: 10px; }
+.success-icon {
+    font-size: 2.8rem;
+    display: block;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 12px rgba(201,168,76,0.6));
+}
+.success-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+.success-body {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text);
+    font-style: italic;
+    margin-bottom: 22px;
+}
+.success-btn {
+    display: inline-block;
+    padding: 12px 32px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05));
+    color: var(--gold-light);
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+.success-btn:hover {
+    box-shadow: 0 0 20px rgba(201,168,76,0.3);
+    color: var(--gold);
+}
+
+/* ===== KONEC SUCCESS OVERLAY ===== */
+
+/* ===== INVENTÁŘ – SPODNÍ LIŠTA ===== */
+.inventory-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 500;
+    background: linear-gradient(to top, #0a0805, #12100a);
+    border-top: 1px solid var(--gold-dark);
+    padding: 10px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.6);
+}
+.inventory-empty {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    color: rgba(122,92,30,0.5);
+    font-style: italic;
+}
+.inventory-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.inventory-items {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+}
+.inv-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(201,168,76,0.07);
+    border: 1px solid var(--gold-dark);
+    border-radius: 3px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    animation: fadeUp 0.4s ease both;
+}
+.inv-item.new-item {
+    animation: newItemPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both,
+               newItemGlow 1.8s ease 0.5s 3;
+}
+@keyframes newItemPop {
+    from { transform: scale(0.6) translateY(8px); opacity: 0; }
+    to   { transform: scale(1) translateY(0);      opacity: 1; }
+}
+@keyframes newItemGlow {
+    0%, 100% { box-shadow: none; border-color: var(--gold-dark); }
+    50%       { box-shadow: 0 0 16px rgba(201,168,76,0.8), 0 0 6px rgba(201,168,76,0.5); border-color: var(--gold); }
+}
+.inv-item:hover, .inv-item:active {
+    background: rgba(201,168,76,0.15);
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(201,168,76,0.2);
+}
+.inv-item-icon { font-size: 1.1rem; }
+.inv-item-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+    color: var(--gold-light);
+    text-transform: uppercase;
+}
+
+/* Detail předmětu */
+.item-detail-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 8000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0 16px 80px; /* mezera nad inventářem */
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(3px);
+    animation: fadeIn 0.25s ease both;
+}
+.item-detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 22px 20px 20px;
+    max-width: 420px;
+    width: 100%;
+    position: relative;
+    box-shadow: 0 0 50px rgba(201,168,76,0.2), 0 -10px 40px rgba(0,0,0,0.5);
+    animation: slideUp 0.3s cubic-bezier(0.34,1.4,0.64,1) both;
+}
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+.item-detail-panel::before, .item-detail-panel::after {
+    content: '✦';
+    position: absolute;
+    color: var(--gold-dark);
+    font-size: 9px;
+}
+.item-detail-panel::before { top: 7px; left: 9px; }
+.item-detail-panel::after  { bottom: 7px; right: 9px; }
+.item-detail-close {
+    position: absolute;
+    top: 8px; right: 12px;
+    font-size: 1.2rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s;
+}
+.item-detail-close:hover { color: var(--gold); }
+.item-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.item-detail-icon { font-size: 1.8rem; }
+.item-detail-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+.item-detail-subtitle {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+.item-detail-text {
+    font-size: 0.9rem;
+    line-height: 1.75;
+    color: var(--text);
+    font-style: italic;
+    border-left: 2px solid var(--gold-dark);
+    padding-left: 12px;
+    margin-top: 4px;
+}
+.item-detail-text strong { color: var(--gold-light); font-style: normal; }
+/* ===== KONEC INVENTÁŘE ===== */
+
+/* Responsive — přidej padding-bottom aby obsah nebyl za lištou */
+.container { padding-bottom: 80px; }
+
+/* ===== ŽIVOTY & VOLBA ===== */
+.lives-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding-left: 12px;
+    border-left: 1px solid rgba(122,92,30,0.3);
+    flex-shrink: 0;
+}
+.lives-bar-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.5rem;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.lives-bar-hearts {
+    display: flex;
+    gap: 2px;
+}
+.life {
+    font-size: 1rem;
+    transition: filter 0.3s, transform 0.3s;
+    display: inline-block;
+}
+.life.lost {
+    filter: grayscale(1) brightness(0.3);
+    transform: scale(0.75);
+}
+@keyframes lifeLost {
+    0%   { transform: scale(1.3); }
+    50%  { transform: scale(0.6); }
+    100% { transform: scale(0.75); }
+}
+.btn-choice {
+    flex: 1;
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    padding: 12px 8px;
+}
+.btn-choice:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Game-over overlay */
+.gameover-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 11000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(6px);
+    animation: fadeIn 0.4s ease both;
+}
+.gameover-panel {
+    background: var(--surface);
+    border: 1px solid #8b2020;
+    border-radius: 6px;
+    padding: 36px 28px 28px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(139,26,26,0.4), 0 20px 60px rgba(0,0,0,0.7);
+    animation: popUp 0.5s cubic-bezier(0.34,1.3,0.64,1) both;
+}
+.gameover-icon { font-size: 3rem; display: block; margin-bottom: 14px; }
+.gameover-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    color: #e05050;
+    font-weight: 900;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+.gameover-body {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 24px;
+}
+/* ===== KONEC ŽIVOTY ===== */
+
+/* ===== SOCHY ===== */
+.statue-card {
+    background: linear-gradient(135deg, rgba(201,168,76,0.04), rgba(0,0,0,0.2));
+    border: 1px solid var(--gold-dark);
+    border-radius: 4px;
+    padding: 16px;
+    transition: border-color 0.4s, box-shadow 0.4s;
+}
+.statue-card.solved {
+    border-color: rgba(45,189,92,0.4);
+    background: linear-gradient(135deg, rgba(45,189,92,0.04), rgba(0,0,0,0.2));
+}
+.statue-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.statue-icon {
+    font-size: 1.8rem;
+    filter: grayscale(0.6) brightness(0.8);
+    transition: filter 0.5s;
+    flex-shrink: 0;
+}
+.statue-card.solved .statue-icon {
+    filter: grayscale(0) brightness(1.2) drop-shadow(0 0 8px rgba(45,189,92,0.5));
+}
+.statue-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+}
+.statue-check {
+    font-size: 0.75rem;
+    color: var(--green-light);
+    letter-spacing: 1px;
+    margin-top: 2px;
+    animation: fadeUp 0.4s ease both;
+}
+.statue-desc {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 12px;
+    padding-left: 8px;
+    border-left: 2px solid var(--gold-dark);
+}
+.statue-card.solved .statue-desc {
+    border-left-color: rgba(45,189,92,0.4);
+}
+/* ===== KONEC SOCHY ===== */
+
+/* Responsive */
+@media (max-width: 500px) {
+    .game-title h1 { font-size: 1.5rem; }
+    .room-card { padding: 20px 16px; }
+    .candle { display: none; }
+    .coin-scene { gap: 20px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Svíčky -->
+<div class="candle left">
+    <div class="candle-glow"></div>
+    <div class="candle-flame"></div>
+    <div class="candle-body"></div>
+</div>
+<div class="candle right">
+    <div class="candle-glow"></div>
+    <div class="candle-flame"></div>
+    <div class="candle-body"></div>
+</div>
+
+<div class="container">
+
+    <!-- Nadpis -->
+    <div class="game-title">
+        <div class="progress-bar">
+            <div class="progress-dot active" id="dot1"></div>
+            <div class="progress-dot" id="dot2"></div>
+            <div class="progress-dot" id="dot3"></div>
+            <div class="progress-dot" id="dot4"></div>
+            <div class="progress-dot" id="dot5"></div>
+            <div class="progress-dot" id="dot6"></div>
+            <div class="progress-dot" id="dot7"></div>
+        </div>
+        <h1>🔐 Úniková hra</h1>
+        <div class="subtitle">Záhady české justice</div>
+        <div class="divider"><span class="divider-icon">⚖</span></div>
+    </div>
+
+    <!-- Místnost 1 -->
+    <div id="room1">
+        <div class="room-card">
+            <div class="room-number">Místnost I / V</div>
+            <div class="room-title">Archív ústavy</div>
+            <div class="divider"><span class="divider-icon">✦</span></div>
+            <p class="room-desc">
+                Jsi uvězněn v prašném archívu plném svazků zákonů. Na zdi visí zaprášená tabulka
+                — ale je příliš tmavá na čtení. Zkus najít zdroj světla…
+            </p>
+
+            <!-- Zeď s pochodní -->
+            <div class="wall-scene" id="wallScene" style="height:90px; margin-bottom:0;">
+                <span class="torch" id="torchBtn" onclick="revealHint()" style="
+                    cursor:pointer; font-size:28px; top:50%; left:50%;
+                    transform:translate(-50%,-50%); position:absolute;
+                    transition: filter 0.4s;
+                " title="Zapálit pochodeň">🕯</span>
+            </div>
+
+            <!-- Tabulka – skrytá, odkryje se kliknutím na pochodeň -->
+            <div id="cipherWrapper" style="
+                display:none;
+                background: linear-gradient(135deg,#1c1510,#120e07);
+                border: 1px solid rgba(201,168,76,0.25);
+                border-top: none;
+                border-radius: 0 0 4px 4px;
+                padding: 14px 12px 16px;
+                margin-bottom: 16px;
+                animation: fadeUp 0.5s ease both;
+            ">
+                <div style="font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:2px;
+                    color:var(--text-dim); text-align:center; margin-bottom:10px; text-transform:uppercase;">
+                    ✦ Struktura ústavního dokumentu
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-family:'Cinzel',serif;
+                    font-size:0.62rem; letter-spacing:1px; color:var(--gold-light);">
+                    <tr><td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1);">Hlava I</td>
+                        <td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1); text-align:right; color:var(--text-dim);">čl. 1 – 9</td></tr>
+                    <tr><td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1);">Hlava II</td>
+                        <td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1); text-align:right; color:var(--text-dim);">čl. 10 – 16</td></tr>
+                    <tr><td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1);">Hlava III</td>
+                        <td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1); text-align:right; color:var(--text-dim);">čl. 17 – 80</td></tr>
+                    <tr><td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1);">Hlava IV</td>
+                        <td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1); text-align:right; color:var(--text-dim);">čl. 81 – 96</td></tr>
+                    <tr><td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1);">Hlava V</td>
+                        <td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1); text-align:right; color:var(--text-dim);">čl. 97 – 103</td></tr>
+                    <tr><td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1);">Hlava VI</td>
+                        <td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1); text-align:right; color:var(--text-dim);">čl. 104 – 106</td></tr>
+                    <tr><td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1);">Hlava VII</td>
+                        <td style="padding:4px 6px; border-bottom:1px solid rgba(201,168,76,0.1); text-align:right; color:var(--text-dim);">čl. 107 – 111</td></tr>
+                    <tr><td style="padding:4px 6px; font-weight:bold; color:var(--gold);">Hlava VIII</td>
+                        <td style="padding:4px 6px; text-align:right; font-weight:bold; color:var(--gold);">čl. 112 – ???</td></tr>
+                </table>
+            </div>
+
+            <!-- Nápověda (skrytá) – odkryje se až po druhém kliknutí -->
+            <div class="hint-box" id="hint" style="margin-bottom:16px;">
+                <div class="hint-label">✦ Poznámka na okraji</div>
+                <em>„Kód je číslo, které uzavírá celý dokument."</em>
+            </div>
+
+            <div class="input-group">
+                <label>🔑 Zadej číselný kód</label>
+                <input id="code1" type="text" inputmode="numeric" placeholder="_ _ _" maxlength="5"
+                    onkeydown="if(event.key==='Enter') checkCode1()">
+            </div>
+            <button class="btn" onclick="checkCode1()">Odemknout dveře</button>
+            <div class="msg" id="msg1"></div>
+        </div>
+    </div>
+
+    <!-- Místnost 2 -->
+    <div id="room2" class="hidden">
+        <div class="room-card">
+            <div class="room-number">Místnost II / V</div>
+            <div class="room-title">Soudní síň</div>
+            <div class="divider"><span class="divider-icon">⚖</span></div>
+            <p class="room-desc">
+                Ocitáš se v soudní síni. Na stěně je vytesána hádanka:
+            </p>
+            <div class="hint-box visible" style="display:block; margin-bottom:18px;">
+                <div class="hint-label">⚖ Nápis na zdi</div>
+                <em>„Jsem druhé největší město Moravy. Říkají mi město studentů a vína.
+                Strážce Ústavy sídlí za mými hradbami od roku 1993.
+                Kdo jsem?"</em>
+            </div>
+            <div class="input-group">
+                <label>🏛 Zadej název města</label>
+                <input id="code2" type="text" placeholder="Město…" maxlength="30"
+                    onkeydown="if(event.key==='Enter') checkCode2()">
+            </div>
+            <button class="btn" onclick="checkCode2()">Potvrdit a pokračovat</button>
+            <div class="msg" id="msg2"></div>
+        </div>
+    </div>
+
+    <!-- Místnost 3 -->
+    <div id="room3" class="hidden">
+        <div class="room-card">
+            <div class="room-number">Místnost III / V</div>
+            <div class="room-title">Knihovna zákonů</div>
+            <div class="divider"><span class="divider-icon">✦</span></div>
+            <p class="room-desc">
+                Stěny jsou obloženy svazky. Na jedné polici chybí kniha — místo ní je
+                vyrytý nápis: <em>„Kolik hlasů senátorů je třeba k přehlasování prezidentského veta?"</em><br><br>
+                Senát má 81 členů. Prezident vetuje zákon — senát může veto přehlasovat
+                <strong style="color:var(--gold-light)">nadpoloviční většinou všech senátorů</strong>.
+            </p>
+            <div class="hint-box visible" style="display:block; margin-bottom:16px; border-color:rgba(201,168,76,0.4);">
+                <div class="hint-label">📄 Nalezeno na podlaze</div>
+                <em>Při vstupu ses skoro zakopnul o útržek papíru. Vzal sis ho — podívej se do inventáře níže.</em>
+            </div>
+            <div class="input-group">
+                <label>🔢 Zadej přesný počet hlasů</label>
+                <input id="code3b" type="text" inputmode="numeric" placeholder="_ _" maxlength="3"
+                    onkeydown="if(event.key==='Enter') checkCode3b()">
+            </div>
+            <button class="btn" onclick="checkCode3b()">Odemknout polici</button>
+            <div class="msg" id="msg3b"></div>
+        </div>
+    </div>
+
+    <!-- Místnost 4 -->
+    <div id="room4" class="hidden">
+        <div class="room-card">
+            <div class="room-number">Místnost IV / V</div>
+            <div class="room-title">Kancelář prokurátora</div>
+            <div class="divider"><span class="divider-icon">✦</span></div>
+
+            <p class="room-desc">
+                Na prokurátorově stole leží spis. Musíš posoudit případ, než se trezor odemkne.
+            </p>
+
+            <div class="hint-box visible" style="display:block; margin-bottom:18px;">
+                <div class="hint-label">📁 Případ č. 47 — Posouzení nutné obrany</div>
+                <em>Útočník vás na ulici udeří pěstí, vyrazí vám telefon a začne utíkat pryč.
+                Vy se za ním rozběhnete — po 50 metrech ho doženete, srazíte ho na zem
+                a udeříte ho pěstí.</em><br><br>
+                <strong style="color:var(--gold-light)">Jednalo se o nutnou obranu?</strong>
+            </div>
+
+            <!-- Tlačítka ANO / NE -->
+            <div id="caseButtons" style="display:flex; gap:12px; margin-bottom:10px;">
+                <button class="btn btn-choice" id="btnAno" onclick="answerCase('ano')"
+                    style="background:linear-gradient(135deg,rgba(45,140,80,0.15),rgba(45,140,80,0.05)); border-color:#2d8c50;">
+                    ✅ ANO — je to nutná obrana
+                </button>
+                <button class="btn btn-choice" id="btnNe" onclick="answerCase('ne')"
+                    style="background:linear-gradient(135deg,rgba(180,50,50,0.15),rgba(180,50,50,0.05)); border-color:#8b2020;">
+                    ❌ NE — není to nutná obrana
+                </button>
+            </div>
+
+            <!-- Penalizace countdown -->
+            <div id="penaltyBox" style="display:none; text-align:center; padding:12px; border:1px solid #8b2020; border-radius:3px; background:rgba(139,26,26,0.1); margin-bottom:10px;">
+                <div style="font-family:'Cinzel',serif; font-size:0.7rem; color:#e05050; letter-spacing:2px; margin-bottom:6px;">⏳ PENALIZACE</div>
+                <div style="font-size:1.8rem; font-family:'Cinzel',serif; color:#e05050;" id="countdownNum">10</div>
+                <div style="font-size:0.75rem; color:var(--text-dim); margin-top:4px;">sekund před dalším pokusem</div>
+            </div>
+
+            <div class="msg" id="msg4"></div>
+
+            <!-- Druhá část: doplnit profesi (skrytá) -->
+            <div id="room4part2" style="display:none; margin-top:20px;">
+                <div class="divider"><span class="divider-icon">✦</span></div>
+                <div class="hint-box visible" style="display:block; margin-bottom:18px; margin-top:14px;">
+                    <div class="hint-label">📜 Fragment dopisu v trezoru</div>
+                    <em>„Vážení kolegové, v trestním řízení podává obžalobu nikoli advokát,
+                    nýbrž <span style="color:var(--gold); letter-spacing:3px;">_ _ _ _ _ _&nbsp;&nbsp;_ _ _ _ _ _ _ _</span>.
+                    Tento orgán zastupuje veřejný zájem státu, nikoliv zájem soukromé osoby."</em>
+                </div>
+                <div class="input-group">
+                    <label>✍ Doplň chybějící profesi</label>
+                    <input id="code4" type="text" placeholder="Název profese…" maxlength="40"
+                        onkeydown="if(event.key==='Enter') checkCode4()">
+                </div>
+                <button class="btn" onclick="checkCode4()">Odemknout trezor</button>
+                <div class="msg" id="msg4b"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Místnost 5 – automat -->
+    <div id="room5" class="hidden">
+        <div class="room-card">
+            <div class="room-number">Místnost V / VI</div>
+            <div class="room-title">Kabinet moudrosti</div>
+            <div class="divider"><span class="divider-icon">⚖</span></div>
+            <p class="room-desc">
+                Uprostřed stojí starý <strong style="color:var(--gold-light)">vědomostní automat</strong> —
+                vlož minci a získáš přístup do poslední místnosti.
+            </p>
+
+            <!-- Mincová scéna -->
+            <div class="coin-scene" id="coinScene">
+                <div class="machine" id="machine">
+                    <div class="machine-top">
+                        <span class="machine-eye" id="machineEye">👁</span>
+                    </div>
+                    <div class="machine-body">
+                        <div class="machine-label">VĚDOMOSTNÍ<br>AUTOMAT</div>
+                        <div class="machine-slot" id="machineSlot">
+                            <div class="slot-arrow" id="slotArrow">↓</div>
+                        </div>
+                        <div class="machine-screen" id="machineScreen">
+                            <span class="screen-idle">Vhoď minci…</span>
+                        </div>
+                    </div>
+                    <div class="machine-legs"></div>
+                </div>
+                <div class="coin-wrapper">
+                    <div class="coin" id="coin" draggable="true">
+                        <span class="coin-inner">§</span>
+                    </div>
+                    <div class="coin-label">· · ·</div>
+                </div>
+            </div>
+
+            <!-- Po vhození mince: spis + tlačítko vstupu -->
+            <div id="afterCoin" style="display:none;">
+                <div class="hint-box visible" style="display:block; margin-bottom:16px; animation: fadeUp 0.5s ease both;">
+                    <div class="hint-label">📂 Automat vydal spis</div>
+                    <em>Spis byl přidán do tvého inventáře. Prostuduj ho — v Sochárně budeš potřebovat každé slovo.</em>
+                </div>
+                <button class="btn" onclick="enterRoom6()" style="margin-top:4px;">
+                    ⚔ Vstoupit do Sochárny
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Místnost 6 – Sochárna -->
+    <div id="room6" class="hidden">
+        <div class="room-card">
+            <div class="room-number">Místnost VI / VI</div>
+            <div class="room-title">Sochárna spravedlnosti</div>
+            <div class="divider"><span class="divider-icon">⚖</span></div>
+            <p class="room-desc">
+                Tři kamenné sochy hledí ze stínů. Každá nese popis — ale jméno bylo
+                odloupnuto. Urči, o které právnické povolání se jedná.
+                Máš u sebe spis z inventáře.
+            </p>
+
+            <!-- Socha 1 -->
+            <div class="statue-card" id="statue1">
+                <div class="statue-header">
+                    <span class="statue-icon" id="statue1icon">⚖️</span>
+                    <div>
+                        <div class="statue-name">Socha I</div>
+                        <div class="statue-check" id="check1" style="display:none;">✅ Zodpovězeno</div>
+                    </div>
+                </div>
+                <p class="statue-desc">
+                    <em>„Poskytuje právní rady, sepisuje smlouvy a zastupuje klienty před soudy.
+                    Pro výkon povolání musí být zapsán v České advokátní komoře."</em>
+                </p>
+                <div id="statue1input">
+                    <div class="input-group" style="margin-bottom:8px;">
+                        <input id="s1_input" type="text" placeholder="Název povolání…" maxlength="30"
+                            onkeydown="if(event.key==='Enter') checkStatue(1)">
+                    </div>
+                    <button class="btn" onclick="checkStatue(1)">Potvrdit</button>
+                    <div class="msg" id="s1_msg"></div>
+                </div>
+            </div>
+
+            <!-- Socha 2 -->
+            <div class="statue-card" id="statue2" style="margin-top:16px;">
+                <div class="statue-header">
+                    <span class="statue-icon" id="statue2icon">🏛️</span>
+                    <div>
+                        <div class="statue-name">Socha II</div>
+                        <div class="statue-check" id="check2" style="display:none;">✅ Zodpovězeno</div>
+                    </div>
+                </div>
+                <p class="statue-desc">
+                    <em>„Zastupuje stát v trestním řízení a podává obžaloby k soudu.
+                    Dohlíží také na zákonnost postupu policie při vyšetřování."</em>
+                </p>
+                <div id="statue2input">
+                    <div class="input-group" style="margin-bottom:8px;">
+                        <input id="s2_input" type="text" placeholder="Název povolání…" maxlength="30"
+                            onkeydown="if(event.key==='Enter') checkStatue(2)">
+                    </div>
+                    <button class="btn" onclick="checkStatue(2)">Potvrdit</button>
+                    <div class="msg" id="s2_msg"></div>
+                </div>
+            </div>
+
+            <!-- Socha 3 -->
+            <div class="statue-card" id="statue3" style="margin-top:16px;">
+                <div class="statue-header">
+                    <span class="statue-icon" id="statue3icon">📜</span>
+                    <div>
+                        <div class="statue-name">Socha III</div>
+                        <div class="statue-check" id="check3" style="display:none;">✅ Zodpovězeno</div>
+                    </div>
+                </div>
+                <p class="statue-desc">
+                    <em>„Sepisuje veřejné listiny, jako jsou závěti nebo zakladatelské smlouvy firem.
+                    Stát ho také pověřuje vyřizováním pozůstalosti v dědickém řízení."</em>
+                </p>
+                <div id="statue3input">
+                    <div class="input-group" style="margin-bottom:8px;">
+                        <input id="s3_input" type="text" placeholder="Název povolání…" maxlength="30"
+                            onkeydown="if(event.key==='Enter') checkStatue(3)">
+                    </div>
+                    <button class="btn" onclick="checkStatue(3)">Potvrdit</button>
+                    <div class="msg" id="s3_msg"></div>
+                </div>
+            </div>
+
+            <div id="room6complete" style="display:none; margin-top:20px;">
+                <div class="hint-box visible" style="display:block; border-color:rgba(45,189,92,0.4); background:rgba(45,189,92,0.05);">
+                    <div class="hint-label" style="color:var(--green-light);">✅ Sochárna dokončena</div>
+                    Všechny tři sochy identifikovány. Dveře se otevírají…
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Výhra -->
+    <div id="win" class="hidden">
+        <div class="win-card">
+            <span class="win-icon">🏆</span>
+            <div class="win-title">Svoboda!</div>
+            <div class="divider"><span class="divider-icon">✦</span></div>
+            <p class="win-subtitle">
+                Prokázal jsi hlubokou znalost české ústavnosti a právnických profesí.<br>
+                Všech šest místností je opět klidných.
+            </p>
+            <div class="win-stats">
+                <div class="win-stat">
+                    <span class="win-stat-value" id="statTime">—</span>
+                    <span class="win-stat-label">Čas úniku</span>
+                </div>
+                <div class="win-stat">
+                    <span class="win-stat-value" id="statAttempts">—</span>
+                    <span class="win-stat-label">Pokusů</span>
+                </div>
+            </div>
+            <button class="btn" onclick="restart()">↩ Hrát znovu</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===== INVENTÁŘ – SPODNÍ LIŠTA ===== -->
+<div class="inventory-bar" id="inventoryBar">
+    <div class="inventory-label">Inventář</div>
+    <div class="inventory-items" id="inventoryItems">
+        <span class="inventory-empty" id="inventoryEmpty">— prázdný —</span>
+    </div>
+    <div class="lives-bar">
+        <span class="lives-bar-label">Životy</span>
+        <div class="lives-bar-hearts">
+            <span class="life" id="life1">❤️</span>
+            <span class="life" id="life2">❤️</span>
+            <span class="life" id="life3">❤️</span>
+        </div>
+    </div>
+</div>
+
+<!-- Detail předmětu overlay -->
+<div class="item-detail-overlay" id="itemDetailOverlay" style="display:none;" onclick="closeItemDetail(event)">
+    <div class="item-detail-panel" id="itemDetailPanel">
+        <span class="item-detail-close" onclick="closeItemDetail()">✕</span>
+        <div class="item-detail-header">
+            <span class="item-detail-icon" id="detailIcon"></span>
+            <div>
+                <div class="item-detail-title" id="detailTitle"></div>
+                <div class="item-detail-subtitle" id="detailSubtitle"></div>
+            </div>
+        </div>
+        <div class="divider"><span class="divider-icon">✦</span></div>
+        <div class="item-detail-text" id="detailText"></div>
+    </div>
+</div>
+
+<script>
+let startTime = Date.now();
+let totalAttempts = 0;
+let hintRevealed = false;
+
+// ---- Helpers ----
+function showError(msgEl, text, withPenalty = false) {
+    totalAttempts++;
+    msgEl.textContent = text;
+    msgEl.className = 'msg error';
+    const card = msgEl.closest('.room-card');
+    if (card) { card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 400); }
+    // Každá špatná odpověď bere život — ale ne penalizační (ta volá loseLife sama)
+    if (!withPenalty) loseLife(false);
+}
+
+// Zobrazí overlay s výsledkem; po kliknutí OK spustí callback
+function showSuccessOverlay(icon, title, body, onOk) {
+    const overlay = document.createElement('div');
+    overlay.className = 'success-overlay';
+    overlay.innerHTML = `
+        <div class="success-panel">
+            <span class="success-icon">${icon}</span>
+            <div class="success-title">${title}</div>
+            <div class="divider"><span class="divider-icon">✦</span></div>
+            <p class="success-body">${body}</p>
+            <button class="success-btn" id="overlayOkBtn">Pokračovat →</button>
+        </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('overlayOkBtn').addEventListener('click', () => {
+        overlay.style.animation = 'none';
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.25s';
+        setTimeout(() => { overlay.remove(); onOk(); }, 250);
+    });
+}
+
+function doTransition(hideId, showId, dotDone, dotNext, focusId) {
+    document.getElementById('dot' + dotDone).classList.replace('active','done');
+    if (dotNext) document.getElementById('dot' + dotNext).classList.add('active');
+    document.getElementById(hideId).classList.add('hidden');
+    document.getElementById(showId).classList.remove('hidden');
+    if (focusId) setTimeout(() => document.getElementById(focusId).focus(), 100);
+}
+
+// ---- Místnost 1 ----
+let hintStep = 0;
+function revealHint() {
+    if (hintStep === 0) {
+        hintStep = 1;
+        const torch = document.getElementById("torchBtn");
+        torch.style.filter = "drop-shadow(0 0 18px rgba(255,180,0,1)) drop-shadow(0 0 40px rgba(255,120,0,0.7))";
+        torch.style.fontSize = "34px";
+        torch.textContent = "🔦";
+        const wall = document.getElementById("wallScene");
+        wall.style.background = "linear-gradient(135deg,rgba(255,150,0,0.07) 0%,#1c1410 60%)";
+        wall.style.transition = "background 0.8s";
+        const wrapper = document.getElementById("cipherWrapper");
+        wrapper.style.display = "block";
+        wrapper.style.cursor = "pointer";
+        wrapper.addEventListener("click", function onTableClick() {
+            if (hintStep >= 2) return;
+            hintStep = 2;
+            document.getElementById("hint").classList.add("visible");
+            wrapper.style.cursor = "default";
+        });
+    }
+}
+
+function checkCode1() {
+    const val = document.getElementById("code1").value.trim();
+    const msg = document.getElementById("msg1");
+    if (val === "113") {
+        msg.textContent = '';
+        showSuccessOverlay(
+            '📜',
+            'Správně!',
+            'Ústava České republiky má celkem <strong style="color:var(--gold)">113 článků</strong> rozdělených do 8 hlav. Poslední článek §113 stanoví, že Ústava nabývá účinnosti dnem 1. ledna 1993.',
+            () => doTransition('room1','room2', 1, 2, 'code2')
+        );
+    } else if (!val) {
+        showError(msg, "✗ Zadej číselný kód.");
+    } else {
+        showError(msg, "✗ Špatný kód. Spočítej znovu…");
+    }
+}
+
+// ---- Místnost 2 ----
+function checkCode2() {
+    const val = document.getElementById("code2").value.trim().toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    const msg = document.getElementById("msg2");
+    if (val === "brno") {
+        msg.textContent = '';
+        showSuccessOverlay(
+            '⚖️',
+            'Správně!',
+            '<strong style="color:var(--gold)">Brno</strong> je sídlem Ústavního soudu ČR od roku 1993. Soud sídlí v Joštově ulici a jako jediný interpretuje Ústavu — jeho nálezy jsou závazné pro všechny orgány státní moci.',
+            () => {
+                doTransition('room2','room3', 2, 3, 'code3b');
+                // Hráč najde útržek v knihovně zákonů
+                setTimeout(() => addToInventory('nutna_obrana'), 600);
+            }
+        );
+    } else if (!val) {
+        showError(msg, "✗ Zadej název města.");
+    } else {
+        showError(msg, "✗ Tohle město to není…");
+    }
+}
+
+// ---- Místnost 3 – veto ----
+function checkCode3b() {
+    const val = document.getElementById("code3b").value.trim();
+    const msg = document.getElementById("msg3b");
+    if (val === "41") {
+        msg.textContent = '';
+        showSuccessOverlay(
+            '🗳️',
+            'Správně!',
+            'K přehlasování prezidentského veta je třeba <strong style="color:var(--gold)">41 hlasů</strong> — nadpoloviční většina z celkových 81 senátorů. Nestačí tedy pouhá většina přítomných, ale musí se sečíst nadpoloviční většina všech zákonných členů Senátu.',
+            () => doTransition('room3','room4', 3, 4, 'code4')
+        );
+    } else if (!val) {
+        showError(msg, "✗ Zadej číslo.");
+    } else {
+        showError(msg, "✗ Špatně. Pamatuj: nadpoloviční většina ze 81.");
+    }
+}
+
+// ---- Místnost 4 – případ + státní zástupce ----
+let lives = 3;
+let penaltyActive = false;
+let caseAnswered = false;
+
+function loseLife(withPenalty = true) {
+    if (lives <= 0) return;
+    lives--;
+
+    // Animace srdíčka
+    const lifeEl = document.getElementById('life' + (lives + 1));
+    if (lifeEl) {
+        lifeEl.style.animation = 'lifeLost 0.4s ease forwards';
+        setTimeout(() => {
+            lifeEl.classList.add('lost');
+            lifeEl.style.animation = '';
+        }, 400);
+    }
+
+    if (lives === 0) {
+        setTimeout(() => showGameOver(), 500);
+        return;
+    }
+
+    // Penalizace s odpočtem jen v místnosti 4 (ANO/NE případ)
+    if (withPenalty) {
+        penaltyActive = true;
+        document.getElementById('btnAno').disabled = true;
+        document.getElementById('btnNe').disabled = true;
+        const msg = document.getElementById('msg4');
+        msg.textContent = `✗ Špatně! Ve chvíli útěku útočníka útok netrval. Zbývají ti ${lives} ${lives === 1 ? 'život' : 'životy'}.`;
+        msg.className = 'msg error';
+
+        const penBox = document.getElementById('penaltyBox');
+        penBox.style.display = 'block';
+        let secs = 10;
+        document.getElementById('countdownNum').textContent = secs;
+        const timer = setInterval(() => {
+            secs--;
+            document.getElementById('countdownNum').textContent = secs;
+            if (secs <= 0) {
+                clearInterval(timer);
+                penaltyActive = false;
+                penBox.style.display = 'none';
+                document.getElementById('btnAno').disabled = false;
+                document.getElementById('btnNe').disabled = false;
+                msg.textContent = '';
+            }
+        }, 1000);
+    }
+}
+
+function answerCase(answer) {
+    if (penaltyActive || caseAnswered) return;
+
+    if (answer === 'ne') {
+        caseAnswered = true;
+        document.getElementById('btnAno').disabled = true;
+        document.getElementById('btnNe').disabled = true;
+        const msg = document.getElementById('msg4');
+        msg.textContent = '✓ Správně! Útočník utíkal — útok již netrval ani nehrozil.';
+        msg.className = 'msg success';
+        setTimeout(() => {
+            document.getElementById('room4part2').style.display = 'block';
+            document.getElementById('room4part2').style.animation = 'fadeUp 0.5s ease both';
+            setTimeout(() => document.getElementById('code4').focus(), 150);
+        }, 900);
+    } else {
+        loseLife(true);
+    }
+}
+
+function showGameOver() {
+    const overlay = document.createElement('div');
+    overlay.className = 'gameover-overlay';
+    overlay.innerHTML = `
+        <div class="gameover-panel">
+            <span class="gameover-icon">💀</span>
+            <div class="gameover-title">Hra skončila</div>
+            <div class="divider"><span class="divider-icon">✦</span></div>
+            <p class="gameover-body">
+                Vyčerpal jsi všechny životy.<br><br>
+                Nutná obrana zaniká ve chvíli, kdy útok skončil —
+                útočník utíkal, ohrožení pominulo. Pronásledování
+                a úder po 50 metrech je <strong style="color:#e05050">pomsta, nikoliv obrana</strong>.
+            </p>
+            <button class="btn" style="border-color:#8b2020; color:#e05050;"
+                onclick="location.reload()">↩ Zkusit znovu od začátku</button>
+        </div>`;
+    document.body.appendChild(overlay);
+}
+
+function checkCode4() {
+    const raw = document.getElementById("code4").value.trim().toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    const msg = document.getElementById("msg4b");
+    const ok = ["statni zastupce","statni zastupkyně","statni zastupkyne","verejny zalobce","zalobce"];
+    if (ok.some(a => raw.includes(a.normalize("NFD").replace(/[\u0300-\u036f]/g,"")))) {
+        msg.textContent = '';
+        showSuccessOverlay(
+            '🏛️',
+            'Správně!',
+            '<strong style="color:var(--gold)">Státní zástupce</strong> podává obžalobu a zastupuje veřejný zájem státu v trestním řízení — na rozdíl od advokáta, který chrání konkrétního klienta. Státní zastupitelství je hierarchicky organizováno od okresní až po nejvyšší úroveň.',
+            () => doTransition('room4','room5', 4, 5, null)
+        );
+    } else if (!raw) {
+        showError(msg, "✗ Zadej název profese.");
+    } else {
+        showError(msg, "✗ Špatně. Kdo zastupuje veřejný zájem státu?");
+    }
+}
+
+// ---- Místnost 5 – profese A/B/C ----
+function normalize(s) {
+    return s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+function revealNext(id, focusId) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.style.animation = 'fadeUp 0.5s ease both';
+    if (focusId) setTimeout(() => document.getElementById(focusId).focus(), 100);
+}
+
+function checkStatue(n) {
+    const input = document.getElementById('s' + n + '_input');
+    const msg   = document.getElementById('s' + n + '_msg');
+    const val   = normalize(input.value);
+    if (!val) { showError(msg, "✗ Zadej název povolání."); return; }
+
+    const answers = {
+        1: ["advokat","advokatka","obhajce"],
+        2: ["statni zastupce","statni zastupkyne","verejny zalobce","zalobce","statni zastupce"],
+        3: ["notar","notarka","notarstvi"]
+    };
+
+    const ok = answers[n].some(a =>
+        val.includes(a.normalize ? a : a)
+    );
+
+    if (ok) {
+        msg.textContent = '';
+        input.disabled = true;
+        document.querySelector('#statue' + n + 'input .btn').disabled = true;
+
+        // Vizuálně zaškrtni sochu
+        const card = document.getElementById('statue' + n);
+        card.classList.add('solved');
+        document.getElementById('check' + n).style.display = 'block';
+        document.getElementById('statue' + n + 'input').style.display = 'none';
+
+        statuesSolved++;
+
+        if (statuesSolved === 3) {
+            // Všechny sochy vyřešeny → výhra po chvilce
+            document.getElementById('room6complete').style.display = 'block';
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            const m = Math.floor(elapsed / 60), s = elapsed % 60;
+            const timeStr = m > 0 ? `${m}m ${s}s` : `${s}s`;
+            showSuccessOverlay(
+                '🏆',
+                'Sochárna překonána!',
+                'Identifikoval jsi všechna tři právnická povolání. <strong style="color:var(--gold)">Advokát</strong>, <strong style="color:var(--gold)">Státní zástupce</strong> a <strong style="color:var(--gold)">Notář</strong> — každý má nezastupitelnou roli v systému spravedlnosti.',
+                () => {
+                    document.getElementById('dot6').classList.replace('active','done');
+                    document.getElementById('dot7').classList.add('done');
+                    document.getElementById('statTime').textContent = timeStr;
+                    document.getElementById('statAttempts').textContent = totalAttempts;
+                    document.getElementById('room6').classList.add('hidden');
+                    document.getElementById('win').classList.remove('hidden');
+                }
+            );
+        } else {
+            // Částečná zpráva — focus na další nevyřešenou
+            for (let i = 1; i <= 3; i++) {
+                const inp = document.getElementById('s' + i + '_input');
+                if (inp && inp.style.display !== 'none') {
+                    const field = document.getElementById('s' + i + '_input').querySelector('input');
+                    if (field) setTimeout(() => field.focus(), 100);
+                    break;
+                }
+            }
+        }
+    } else {
+        showError(msg, "✗ Špatně. Prostuduj si spis v inventáři.");
+    }
+}
+
+function enterRoom6() {
+    doTransition('room5', 'room6', 5, 6, null);
+}
+
+function restart() { location.reload(); }
+
+// ===== INVENTÁŘ =====
+const inventory = [];
+
+const ITEMS = {
+    nutna_obrana: {
+        icon: '📄',
+        name: 'Útržek zákona',
+        subtitle: '§ 29 Trestního zákoníku',
+        text: `<strong>Nutná obrana</strong> je zákonný způsob odvrácení přímo hrozícího nebo trvajícího útoku na zájem chráněný zákonem (např. zdraví, život, majetek).<br><br>
+Podle <strong>§ 29 trestního zákoníku</strong> takové jednání není trestným činem, pokud obrana není zcela zjevně nepřiměřená způsobu útoku.`
+    },
+    profese_spis: {
+        icon: '📂',
+        name: 'Spis: Právní profese',
+        subtitle: 'Kabinet moudrosti',
+        text: `<strong>Advokát</strong><br>
+Poskytuje právní rady, sepisuje smlouvy a zastupuje klienty před soudy. Pro výkon povolání musí být zapsán v České advokátní komoře.<br><br>
+<strong>Státní zástupce</strong><br>
+Zastupuje stát v trestním řízení a podává obžaloby k soudu. Dohlíží také na zákonnost postupu policie při vyšetřování.<br><br>
+<strong>Notář</strong><br>
+Sepisuje veřejné listiny, jako jsou závěti nebo zakladatelské smlouvy firem. Stát ho také pověřuje vyřizováním pozůstalosti v dědickém řízení.`
+    }
+};
+
+let statuesSolved = 0;
+
+function addToInventory(itemId) {
+    if (inventory.includes(itemId)) return;
+    inventory.push(itemId);
+    const item = ITEMS[itemId];
+    const items = document.getElementById('inventoryItems');
+
+    // Skryj prázdný stav
+    const empty = document.getElementById('inventoryEmpty');
+    if (empty) empty.style.display = 'none';
+
+    // Přidej předmět s animací
+    const el = document.createElement('div');
+    el.className = 'inv-item new-item';
+    el.dataset.itemId = itemId;
+    el.innerHTML = `<span class="inv-item-icon">${item.icon}</span><span class="inv-item-name">${item.name}</span>`;
+    el.addEventListener('click', () => openItemDetail(itemId));
+    items.appendChild(el);
+
+    // Po animaci odeber new-item třídu (nechá hover efekty)
+    setTimeout(() => el.classList.remove('new-item'), 6000);
+}
+
+function openItemDetail(itemId) {
+    const item = ITEMS[itemId];
+    document.getElementById('detailIcon').textContent = item.icon;
+    document.getElementById('detailTitle').textContent = item.name;
+    document.getElementById('detailSubtitle').textContent = item.subtitle;
+    document.getElementById('detailText').innerHTML = item.text;
+    const overlay = document.getElementById('itemDetailOverlay');
+    overlay.style.display = 'flex';
+    overlay.style.animation = 'fadeIn 0.25s ease both';
+}
+
+function closeItemDetail(e) {
+    // Zavři jen při kliknutí na overlay samotný (ne na panel)
+    if (e && e.target !== document.getElementById('itemDetailOverlay') &&
+        !e.target.classList.contains('item-detail-close')) return;
+    const overlay = document.getElementById('itemDetailOverlay');
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.2s';
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        overlay.style.opacity = '';
+        overlay.style.transition = '';
+    }, 200);
+}
+
+// Klávesa Escape zavírá detail
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeItemDetail({ target: document.getElementById('itemDetailOverlay') });
+});
+// ===== KONEC INVENTÁŘE =====
+
+// ---- Mincová mechanika ----
+function initCoinMechanic() {
+    const coin = document.getElementById("coin");
+    const machine = document.getElementById("machine");
+    const screen = document.getElementById("machineScreen");
+    const eye = document.getElementById("machineEye");
+    let coinInserted = false, dragging = false, offsetX, offsetY, coinClone = null;
+
+    function onPointerDown(e) {
+        if (coinInserted) return;
+        e.preventDefault();
+        dragging = true;
+        const rect = coin.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        coinClone = document.createElement('div');
+        coinClone.style.cssText = `position:fixed;width:${rect.width}px;height:${rect.height}px;
+            left:${rect.left}px;top:${rect.top}px;z-index:9999;pointer-events:none;
+            border-radius:50%;background:radial-gradient(circle at 35% 35%,#f0d060,#c9a84c 50%,#8a6820 100%);
+            border:2px solid #f0d080;box-shadow:0 8px 30px rgba(201,168,76,0.7);
+            display:flex;align-items:center;justify-content:center;
+            font-size:1.4rem;font-weight:900;color:#7a5010;font-family:'Cinzel',serif;`;
+        coinClone.textContent = '§';
+        document.body.appendChild(coinClone);
+        coin.style.opacity = '0.3';
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+    }
+    function onPointerMove(e) {
+        if (!dragging || !coinClone) return;
+        coinClone.style.left = (e.clientX - offsetX) + 'px';
+        coinClone.style.top  = (e.clientY - offsetY) + 'px';
+        const mr = machine.getBoundingClientRect();
+        const near = e.clientX > mr.left-20 && e.clientX < mr.right+20
+                  && e.clientY > mr.top-20  && e.clientY < mr.bottom+20;
+        machine.style.filter = near
+            ? 'drop-shadow(0 4px 28px rgba(201,168,76,0.9))'
+            : 'drop-shadow(0 4px 16px rgba(0,0,0,0.6))';
+    }
+    function onPointerUp(e) {
+        if (!dragging) return;
+        dragging = false;
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        if (coinClone) { coinClone.remove(); coinClone = null; }
+        coin.style.opacity = '';
+        machine.style.filter = '';
+        const mr = machine.getBoundingClientRect();
+        if (!coinInserted &&
+            e.clientX > mr.left && e.clientX < mr.right &&
+            e.clientY > mr.top  && e.clientY < mr.bottom) {
+            insertCoin();
+        }
+    }
+    coin.addEventListener('pointerdown', onPointerDown);
+
+    function insertCoin() {
+        coinInserted = true;
+        coin.classList.add("used");
+        machine.classList.add("activated");
+        setTimeout(() => machine.classList.remove("activated"), 500);
+        eye.classList.add("awake");
+        machine.style.filter = "drop-shadow(0 4px 24px rgba(201,168,76,0.5))";
+        const msgs = ["NAČÍTÁM...", "ANALÝZA...", "PŘIPRAVEN ✓"];
+        let mi = 0;
+        function nextMsg() {
+            screen.innerHTML = msgs[mi++] || '';
+            if (mi < msgs.length) setTimeout(nextMsg, 650);
+            else setTimeout(() => {
+                // Přidej spis do inventáře
+                addToInventory('profese_spis');
+                // Zobraz tlačítko vstupu
+                const ac = document.getElementById('afterCoin');
+                ac.style.display = 'block';
+                ac.style.animation = 'fadeUp 0.5s ease both';
+            }, 500);
+        }
+        setTimeout(nextMsg, 200);
+    }
+}
+
+window.addEventListener('load', () => {
+    setTimeout(() => document.getElementById("code1").focus(), 600);
+    initCoinMechanic();
+});
+</script>
+
+</body>
+</html>
